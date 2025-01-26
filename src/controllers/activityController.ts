@@ -51,12 +51,16 @@ export const getActivitiesByOperator = async (req: Request, res: Response): Prom
 
   export const getAllActivities = async (req: Request, res: Response): Promise<void> => {
     try {
-      const activities = await Activity.find();
+      const activities = await Activity.find()
+        .populate('classId', 'name uniqueSymbol') // משיכת שם הכיתה והסמל שלה
+        .populate('operatorId', 'firstName lastName'); // משיכת שם המפעיל
+  
       res.json(activities);
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }
   };
+  
 
 // עדכון נוכחות לפעילות
 export const updatePresence = async (req: Request, res: Response): Promise<void> => {

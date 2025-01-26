@@ -9,6 +9,7 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       firstName, 
       lastName, 
       id, 
+      status, 
       email, 
       password, 
       phone, 
@@ -18,28 +19,34 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       businessDetails, 
       bankDetails } = req.body;
 
-    if (!firstName || !phone || !address || !description || !paymentMethod || !bankDetails || !id || !password) {
+    if (!firstName || !phone || !description || !paymentMethod || !bankDetails || !id || !password) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
 
-    if (paymentMethod === 'חשבונית' && !businessDetails) {
-      res.status(400).json({ error: 'Business details are required for payment method "חשבונית"' });
-      return;
-    }
+    // if (paymentMethod === 'חשבונית' && !businessDetails) {
+    //   res.status(400).json({ error: 'Business details are required for payment method "חשבונית"' });
+    //   return;
+    // }
+
+    const operatorAddress = address || "לא התקבלו פרטים";
+    const operatorBusinessDetails = businessDetails || { businessId: "לא התקבלו פרטים", businessName: "לא התקבלו פרטים" };
+
+
 
     const newOperator = new Operator({
       firstName,
       lastName,
       email,
       phone,
-      address,
+      address: operatorAddress,
       id,
       password,
       description,
       paymentMethod,
-      businessDetails: paymentMethod === 'חשבונית' ? businessDetails : undefined,
+      businessDetails: paymentMethod === 'חשבונית' ? operatorBusinessDetails : undefined,
       bankDetails,
+      signDate: new Date(),
     });
 
     await newOperator.save();

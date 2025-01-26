@@ -21,6 +21,8 @@ export interface OperatorDocument extends Document {
   phone: string;
   address: string;
   description: string;
+  status: string;
+  signDate: Date;
   paymentMethod: 'חשבונית' | 'תלוש'| 'לא נבחר';
   businessDetails?: BusinessDetails;
   bankDetails: BankDetails;
@@ -41,6 +43,8 @@ const OperatorSchema: Schema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   password: { type: String, required: true },
+  status: { type: String},
+  signDate: { type: Date, required: true },
   id: { type: String, required: true },
   phone: { type: String, required: true },
   address: { type: String, required: true },
