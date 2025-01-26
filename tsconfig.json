@@ -1,10 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES6",
     "module": "commonjs",
-    "rootDir": "./src",
     "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
-    "esModuleInterop": true
-  }
+    "esModuleInterop": true,       // הוסף שדה זה
+    "skipLibCheck": true           // מדלג על בדיקות מיותרות בספריות
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
 }
