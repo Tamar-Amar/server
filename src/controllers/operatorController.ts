@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Operator from '../models/Operator';
-
+import jwt from 'jsonwebtoken';
 // הוספת מפעיל חדש
 export const addOperator = async (req: Request, res: Response): Promise<void> => {
   console.log(req.body);
@@ -75,6 +75,58 @@ export const deleteOperator = async (req: Request, res: Response): Promise<void>
       return;
     }
     res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+// עריכת מפעיל
+export const updateOperator = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const operatorId = req.params.id;
+    const updatedData = req.body;
+
+    const updatedOperator = await Operator.findByIdAndUpdate(
+      operatorId,
+      { ...updatedData },
+      { new: true, runValidators: true } // מחזיר את המסמך המעודכן ומבצע ולידציה
+    );
+
+    if (!updatedOperator) {
+      res.status(404).json({ error: 'Operator not found' });
+      return;
+    }
+
+    res.status(200).json(updatedOperator);
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+};
+
+export const getCurrentOperator = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      res.status(401).json({ error: 'Missing Authorization header' });
+      return;
+    }
+
+    // שליפת הטוקן מתוך ה-Authorization Header
+    const token = authHeader.split(' ')[1];
+
+    // אימות הטוקן
+    const decoded: any = jwt.verify(token, 'secret_key'); // החלף את 'secret_key' במפתח שלך
+
+    // חיפוש המפעיל לפי ה-ID שנמצא בטוקן
+    const operator = await Operator.findById(decoded.id);
+
+    if (!operator) {
+      res.status(404).json({ error: 'Operator not found' });
+      return;
+    }
+
+    res.status(200).json(operator); // החזרת נתוני המפעיל
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

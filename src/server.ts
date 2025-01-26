@@ -12,6 +12,11 @@ import purchaseRoutes from './routes/purchaseRoutes';
 import invoiceRoutes from './routes/invoiceRoutes';
 import PDFDocument from 'pdfkit';
 import dayjs from 'dayjs';
+import Operator from './models/Operator';
+import jwt from 'jsonwebtoken';
+import { Request, Response } from 'express';
+import authRoutes from './routes/authRoutes';
+
 
 dotenv.config();
 const app = express();
@@ -28,6 +33,7 @@ app.use('/api/activities', activityRoutes);
 app.use("/api/operators", operatorRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/auth', authRoutes);
 
 const path = require('path');
 
@@ -46,60 +52,46 @@ app.post("/api/generate-pdf", (req, res) => {
   const { month } = req.body;
   const fonts = {
     regular: "../src/fonts/Alef-Regular.ttf",
-};
-
+  };
   const selectedDate = dayjs(month);
   const startDate = selectedDate.subtract(1, "month").date(26);
   const endDate = selectedDate.date(25);
-
   const reportData = [];
   let currentDate = startDate;
-
-
-
   while (currentDate.isBefore(endDate) || currentDate.isSame(endDate)) {
     const gregorianDate = currentDate.format("DD/MM/YYYY");
     const dayOfWeekEnglish = currentDate.format("dddd");
     const dayOfWeekHebrew = daysOfWeekHebrew[dayOfWeekEnglish];
-
     reportData.push({
       gregorianDate,
       dayOfWeekHebrew,
       attendanceText: "",
     });
-
     currentDate = currentDate.add(1, "day");
   }
 
   const doc = new PDFDocument({ lang: "he", margin: 40 });
   const fontPath = path.join(__dirname, "../src/fonts/Alef-Regular.ttf");
   doc.font(fontPath);
-
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
     "Content-Disposition",
     'attachment; filename="attendance_report.pdf"'
   );
-
   doc.pipe(res);
-
-  // כותרת הדוח
   doc
     .fontSize(14)
     .text(`דוח נוכחות לחודש 5202-10`, {
       align: "right",
-      features: ['rtla'], // תכונה עבור טקסט RTL
+      features: ['rtla'], 
     })
     .moveDown(0.5);
-
-  // שם מפעיל ותעודת זהות
   doc
     .fontSize(10)
     .text("שם המפעיל:   _______________________   תעודת זהות: _________________", { align: "right", features: ['rtla'] })
 
 
   const  startY=105;
-  // כותרות הטבלה
   doc
     .fontSize(10)
     .text("תאריך לועזי", 490, startY, { features: ['rtla'], underline: true })
@@ -108,7 +100,6 @@ app.post("/api/generate-pdf", (req, res) => {
 
     let y=startY + 20;
     const rowHeight = 20; 
-  // שורות הדוח
   reportData.forEach((row) => {
     const attendanceText = row.dayOfWeekHebrew.trim() === "שישי" || row.dayOfWeekHebrew.trim() === "שבת" 
     ? "-" 
@@ -120,21 +111,17 @@ app.post("/api/generate-pdf", (req, res) => {
       .text(row.dayOfWeekHebrew, 415, y)
       .text(attendanceText, 350, y)
 
-    // קו מפריד בין השורות
     doc
     .moveTo(50, y + 16)
     .lineTo(550, y + 16)
-    .lineWidth(0.5) // עובי קו
-    .strokeColor('#CCCCCC') // צבע הקו
+    .lineWidth(0.5)
+    .strokeColor('#CCCCCC') 
     .stroke();
-
       y += rowHeight;
   });
 
-  // קווים בין העמודות
   doc.lineWidth(0.5).moveTo(463, 125).lineTo(463, 743).stroke();
   doc.lineWidth(0.5).moveTo(380, 125).lineTo(380, 743).stroke();
-
   doc.end();
 });
 
