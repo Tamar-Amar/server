@@ -88,3 +88,24 @@ export const updatePresence = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+// DELETE api/activities/:id
+export const deleteActivity = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const deletedActivity = await Activity.findByIdAndDelete(id);
+
+    if (!deletedActivity) {
+      res.status(404).json({ error: 'פעילות לא נמצאה' });
+      return;
+    }
+
+    // מחזירים את ה-ID של המפעיל ואת ה-ID של הפעילות שנמחקה
+    res.status(200).json({
+      operatorId: deletedActivity.operatorId,
+      activityId: deletedActivity._id,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'שגיאה בשרת' });
+  }
+};
