@@ -10,9 +10,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key') as { id: string; role: string };
-    req.body.role = decoded.role; // שמירת התפקיד
-    req.body.userId = decoded.id; // שמירת מזהה המשתמש
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string; role: string };
+    req.body.role = decoded.role;
+    req.body.userId = decoded.id; 
     next();
   } catch (error) {
     res.status(403).json({ message: 'טוקן לא תקף' });

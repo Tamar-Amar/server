@@ -3,7 +3,6 @@ import Operator from '../models/Operator';
 import jwt from 'jsonwebtoken';
 // הוספת מפעיל חדש
 export const addOperator = async (req: Request, res: Response): Promise<void> => {
-  console.log(req.body);
   try {
     const { 
       firstName, 
@@ -80,7 +79,6 @@ export const deleteOperator = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// עריכת מפעיל
 export const updateOperator = async (req: Request, res: Response): Promise<void> => {
   try {
     const operatorId = req.params.id;
@@ -89,7 +87,7 @@ export const updateOperator = async (req: Request, res: Response): Promise<void>
     const updatedOperator = await Operator.findByIdAndUpdate(
       operatorId,
       { ...updatedData },
-      { new: true, runValidators: true } // מחזיר את המסמך המעודכן ומבצע ולידציה
+      { new: true, runValidators: true } 
     );
 
     if (!updatedOperator) {
@@ -104,29 +102,28 @@ export const updateOperator = async (req: Request, res: Response): Promise<void>
 };
 
 export const getCurrentOperator = async (req: Request, res: Response): Promise<void> => {
+  
   try {
     const authHeader = req.headers.authorization;
-
     if (!authHeader) {
       res.status(401).json({ error: 'Missing Authorization header' });
       return;
     }
-
-    // שליפת הטוקן מתוך ה-Authorization Header
     const token = authHeader.split(' ')[1];
 
-    // אימות הטוקן
-    const decoded: any = jwt.verify(token, 'secret_key'); // החלף את 'secret_key' במפתח שלך
-
-    // חיפוש המפעיל לפי ה-ID שנמצא בטוקן
-    const operator = await Operator.findById(decoded.id);
-
+    const decoded = jwt.decode(token, { complete: true }) as any;
+    if (decoded?.payload?.exp * 1000 < Date.now()) {
+      console.error("Token expired:", new Date(decoded.payload.exp * 1000));
+      res.status(401).json({ error: "Token expired" });
+      return;
+    }
+    const operator = await Operator.findById(decoded.payload.id);
     if (!operator) {
       res.status(404).json({ error: 'Operator not found' });
       return;
     }
 
-    res.status(200).json(operator); // החזרת נתוני המפעיל
+    res.status(200).json(operator); 
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

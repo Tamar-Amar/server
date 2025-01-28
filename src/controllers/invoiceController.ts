@@ -5,7 +5,6 @@ import Invoice from '../models/Invoice';
 // Add Invoice
 export const addInvoice = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log("Request body:", req.body);
     const invoice = new Invoice(req.body);
     await invoice.save();
     res.status(201).json(invoice);

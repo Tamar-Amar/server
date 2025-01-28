@@ -20,7 +20,18 @@ import authRoutes from './routes/authRoutes';
 
 dotenv.config();
 const app = express();
-app.use(cors());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS as string).split(',');
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+}));
+
 app.use(express.json());
 
 
@@ -47,7 +58,6 @@ const daysOfWeekHebrew: { [key: string]: string } = {
   Saturday: "  שבת",
 };
 
-// יצירת PDF ושליחתו ללקוח
 app.post("/api/generate-pdf", (req, res) => {
   const { month } = req.body;
   const fonts = {
