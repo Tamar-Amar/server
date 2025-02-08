@@ -7,7 +7,6 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, isSpecialEducation, gender, uniqueSymbol, chosenStore, institutionId, type, hasAfternoonCare } = req.body;
 
-    // וידוא ששדות חובה נשלחו
     if (!name || !type ) {
       res.status(400).json({ error: 'Missing required fields: name, type, or hasAfternoonCare' });
       return;

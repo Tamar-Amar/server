@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
 import Store from '../models/Store';
 
-// הוספת חנות חדשה
 export const addStore = async (req: Request, res: Response): Promise<void> => {
     try {
       const { name, address, businessId, contactPersons } = req.body;
   
-      // בדיקות חובה
       if (!name || !businessId || !contactPersons || !Array.isArray(contactPersons)) {
         res.status(400).json({ error: 'Missing required fields: name, businessId, or contactPersons' });
         return;
@@ -26,7 +24,6 @@ export const addStore = async (req: Request, res: Response): Promise<void> => {
     }
   };
 
-// קבלת כל החנויות
 export const getStores = async (req: Request, res: Response): Promise<void> => {
   try {
     const stores = await Store.find();
@@ -36,7 +33,6 @@ export const getStores = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// מחיקת חנות לפי מזהה
 export const deleteStore = async (req: Request, res: Response): Promise<void> => {
   try {
     const store = await Store.findByIdAndDelete(req.params.id);

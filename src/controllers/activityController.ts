@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import Activity from '../models/Activity';
 
-// יצירת פעילות חדשה
 export const addActivity = async (req: Request, res: Response): Promise<void> => {
   console.log("-------------",req.body)
     try {
@@ -28,12 +27,11 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
     }
   };
 
-// קבלת כל הפעילויות לכיתה מסוימת
 export const getActivitiesByClass = async (req: Request, res: Response): Promise<void> => {
     try {
       const { classId } = req.params;
       const activities = await Activity.find({ classId })
-        .populate('operatorId', 'name phone') // משיכת פרטים של המפעיל
+        .populate('operatorId', 'name phone')
       res.json(activities);
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
@@ -55,8 +53,8 @@ export const getActivitiesByOperator = async (req: Request, res: Response): Prom
   export const getAllActivities = async (req: Request, res: Response): Promise<void> => {
     try {
       const activities = await Activity.find()
-        .populate('classId', 'name uniqueSymbol') // משיכת שם הכיתה והסמל שלה
-        .populate('operatorId', 'firstName lastName'); // משיכת שם המפעיל
+        .populate('classId', 'name uniqueSymbol')
+        .populate('operatorId', 'firstName lastName'); 
   
       res.json(activities);
     } catch (err) {
@@ -65,7 +63,6 @@ export const getActivitiesByOperator = async (req: Request, res: Response): Prom
   };
   
 
-// עדכון נוכחות לפעילות
 export const updatePresence = async (req: Request, res: Response): Promise<void> => {
   try {
     const { activityId, presence } = req.body;
@@ -92,7 +89,6 @@ export const updatePresence = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// DELETE api/activities/:id
 export const deleteActivity = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -103,7 +99,6 @@ export const deleteActivity = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // מחזירים את ה-ID של המפעיל ואת ה-ID של הפעילות שנמחקה
     res.status(200).json({
       operatorId: deletedActivity.operatorId,
       activityId: deletedActivity._id,
