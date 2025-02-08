@@ -8,7 +8,7 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
     const isAdmin = id === process.env.ADMIN_ID && password === process.env.ADMIN_PASSWORD;
 
     if (isAdmin) {
-      const adminToken = jwt.sign({ id, role: 'admin' }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+      const adminToken = jwt.sign({ id, role: 'admin' }, process.env.JWT_SECRET as string, { expiresIn: '20d' });
       res.status(200).json({ message: 'כניסה מוצלחת', token: adminToken, role: 'admin' });
       return;
     }
@@ -25,7 +25,7 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = jwt.sign({ id: operator._id, role: 'operator' }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+    const token = jwt.sign({ id: operator._id, role: 'operator' }, process.env.JWT_SECRET as string, { expiresIn: '20d' });
     res.status(200).json({ message: 'כניסה מוצלחת', token, role: 'operator' });
   } catch (error) {
     console.error('Error during login:', error);

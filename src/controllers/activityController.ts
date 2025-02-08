@@ -3,6 +3,7 @@ import Activity from '../models/Activity';
 
 // יצירת פעילות חדשה
 export const addActivity = async (req: Request, res: Response): Promise<void> => {
+  console.log("-------------",req.body)
     try {
       const { classId, operatorId, date, description } = req.body;
   
@@ -17,6 +18,8 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
         date,
         description,
       });
+
+      console.log("--------",newActivity)
   
       await newActivity.save();
       res.status(201).json(newActivity);
