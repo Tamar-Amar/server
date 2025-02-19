@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import Operator from '../models/Operator';
+import BankDetails from '../models/BankDetails';
 import jwt from 'jsonwebtoken';
-// הוספת מפעיל חדש
+import Class from '../models/Class';
+
 export const addOperator = async (req: Request, res: Response): Promise<void> => {
   try {
     const { 
@@ -16,22 +18,25 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       description, 
       paymentMethod, 
       businessDetails, 
-      bankDetails } = req.body;
+      bankDetails, 
+      gender, 
+      educationType 
+    } = req.body;
 
-    if (!firstName || !phone || !description || !paymentMethod || !bankDetails || !id || !password) {
-      res.status(400).json({ error: 'Missing required fields' });
+    if (!firstName || !phone || !description || !paymentMethod || !bankDetails || !id || !password || !gender || !educationType) {
+      res.status(400).json({ error: "Missing required fields" });
       return;
     }
-
-    // if (paymentMethod === 'חשבונית' && !businessDetails) {
-    //   res.status(400).json({ error: 'Business details are required for payment method "חשבונית"' });
-    //   return;
-    // }
 
     const operatorAddress = address || "לא התקבלו פרטים";
     const operatorBusinessDetails = businessDetails || { businessId: "לא התקבלו פרטים", businessName: "לא התקבלו פרטים" };
 
-
+    const newBankDetails = new BankDetails({
+      bankName: bankDetails.bankName,
+      accountNumber: bankDetails.accountNumber,
+      branchNumber: bankDetails.branchNumber,
+    });
+    await newBankDetails.save();
 
     const newOperator = new Operator({
       firstName,
@@ -43,9 +48,12 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       password,
       description,
       paymentMethod,
-      businessDetails: paymentMethod === 'חשבונית' ? operatorBusinessDetails : undefined,
-      bankDetails,
+      status,
+      businessDetails: paymentMethod === "חשבונית" ? operatorBusinessDetails : undefined,
+      bankDetailsId: newBankDetails._id, 
       signDate: new Date(),
+      gender,
+      educationType,
     });
 
     await newOperator.save();
@@ -55,29 +63,40 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-// קבלת כל המפעילים
+
 export const getOperators = async (req: Request, res: Response): Promise<void> => {
   try {
-    const operators = await Operator.find();
+    const operators = await Operator.find({ isActive: true }).populate("bankDetailsId");
     res.json(operators);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
 };
 
-// מחיקת מפעיל
+
 export const deleteOperator = async (req: Request, res: Response): Promise<void> => {
   try {
-    const operator = await Operator.findByIdAndDelete(req.params.id);
+    const operatorId = req.params.id;
+
+    const operator = await Operator.findByIdAndUpdate(operatorId, { isActive: false }, { new: true });
+
     if (!operator) {
       res.status(404).json({ error: 'Operator not found' });
       return;
     }
-    res.status(204).end();
+
+    
+    await Class.updateMany(
+      { regularOperatorId: operatorId }, 
+      { regularOperatorId: null} 
+    );
+
+    res.status(200).json({ message: 'Operator deactivated successfully, and classes updated' });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
 
 export const updateOperator = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -102,7 +121,6 @@ export const updateOperator = async (req: Request, res: Response): Promise<void>
 };
 
 export const getCurrentOperator = async (req: Request, res: Response): Promise<void> => {
-  
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -117,13 +135,31 @@ export const getCurrentOperator = async (req: Request, res: Response): Promise<v
       res.status(401).json({ error: "Token expired" });
       return;
     }
-    const operator = await Operator.findById(decoded.payload.id);
+
+    const operator = await Operator.findById(decoded.payload.id).populate("bankDetailsId");
     if (!operator) {
       res.status(404).json({ error: 'Operator not found' });
       return;
     }
 
     res.status(200).json(operator); 
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+export const getOperatorById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const operator = await Operator.findById(id).populate("bankDetailsId");
+
+    if (!operator) {
+      res.status(404).json({ error: "Operator not found" });
+      return;
+    }
+
+    res.status(200).json(operator);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

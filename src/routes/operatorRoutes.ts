@@ -1,9 +1,10 @@
 import express from 'express';
-import { addOperator, getOperators, deleteOperator, updateOperator, getCurrentOperator } from '../controllers/operatorController';
+import { addOperator, getOperators, deleteOperator, updateOperator, getCurrentOperator, getOperatorById } from '../controllers/operatorController';
 
 const router = express.Router();
 
 router.post('/', addOperator);
+router.get('/:id', getOperatorById);
 router.get('/', getOperators);
 router.delete('/:id', deleteOperator);
 router.put('/:id', updateOperator); 

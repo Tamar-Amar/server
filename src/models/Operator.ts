@@ -1,11 +1,5 @@
 // src/models/Operator.ts
-import mongoose, { Schema, Document } from 'mongoose';
-
-interface BankDetails {
-  bankName: string;
-  accountNumber: string;
-  branchNumber: string;
-}
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 interface BusinessDetails {
   businessId: string;
@@ -23,16 +17,14 @@ export interface OperatorDocument extends Document {
   description: string;
   status: string;
   signDate: Date;
-  paymentMethod: 'חשבונית' | 'תלוש'| 'לא נבחר';
+  paymentMethod: 'חשבונית' | 'תלוש' | 'לא נבחר';
   businessDetails?: BusinessDetails;
-  bankDetails: BankDetails;
+  bankDetailsId: Types.ObjectId;
+  regularClasses: Types.ObjectId[];
+  gender: 'בנים' | 'בנות' | 'גם וגם'; 
+  educationType: 'רגיל' | 'מיוחד' | 'גם וגם'; 
+  isActive: boolean;
 }
-
-const BankDetailsSchema: Schema = new Schema({
-  bankName: { type: String, required: true },
-  accountNumber: { type: String, required: true },
-  branchNumber: { type: String, required: true },
-});
 
 const BusinessDetailsSchema: Schema = new Schema({
   businessId: { type: String, required: true },
@@ -43,15 +35,19 @@ const OperatorSchema: Schema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   password: { type: String, required: true },
-  status: { type: String},
+  status: { type: String },
   signDate: { type: Date, required: true },
-  id: { type: String, required: true },
+  id: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   address: { type: String, required: true },
-  description: { type: String, required: true },
-  paymentMethod: { type: String, enum: ['חשבונית', 'תלוש','לא נבחר'], required: true },
+  description: { type: String },
+  paymentMethod: { type: String, enum: ['חשבונית', 'תלוש', 'לא נבחר'], required: true },
   businessDetails: { type: BusinessDetailsSchema, required: false },
-  bankDetails: { type: BankDetailsSchema, required: true },
+  bankDetailsId: { type: Schema.Types.ObjectId, ref: 'BankDetails', required: true },
+  regularClasses: [{ type: Schema.Types.ObjectId, ref: 'Class' }],
+  gender: { type: String, enum: ['בנים', 'בנות', 'גם וגם'], required: true, default: 'גם וגם' },
+  educationType: { type: String, enum: ['רגיל', 'מיוחד', 'גם וגם'], required: true, default: 'גם וגם' }, 
+  isActive:{type: Boolean, default: true}
 });
 
 export default mongoose.model<OperatorDocument>('Operator', OperatorSchema, 'operators-collections');

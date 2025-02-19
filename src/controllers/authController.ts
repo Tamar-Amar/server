@@ -15,6 +15,8 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
 
     const operator = await Operator.findOne({ id });
 
+    
+
     if (!operator) {
       res.status(404).json({ message: 'מפעיל לא נמצא' });
       return;
@@ -22,6 +24,11 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
 
     if (operator.password !== password) {
       res.status(401).json({ message: 'סיסמה שגויה' });
+      return;
+    }
+
+    if(operator.isActive=== false){
+      res.status(401).json({ message: 'המפעיל לא פעיל' });
       return;
     }
 

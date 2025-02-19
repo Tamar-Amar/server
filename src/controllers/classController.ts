@@ -2,13 +2,19 @@ import { Request, Response } from 'express';
 import Class from '../models/Class';
 import mongoose from 'mongoose';
 
-//add class
 export const addClass = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, isSpecialEducation, gender, uniqueSymbol, chosenStore, institutionId, type, hasAfternoonCare } = req.body;
+    const { name, isSpecialEducation, gender, uniqueSymbol, chosenStore, institutionId, type, hasAfternoonCare, regularOperatorId } = req.body;
 
-    if (!name || !type ) {
-      res.status(400).json({ error: 'Missing required fields: name, type, or hasAfternoonCare' });
+    if (!name || !type) {
+      res.status(400).json({ error: 'Missing required fields: name, type' });
+      return;
+    }
+
+    const existingClass = await Class.findOne({ uniqueSymbol });
+
+    if (existingClass) {
+      res.status(400).json({ error: 'Class with this uniqueSymbol already exists' });
       return;
     }
 
@@ -20,7 +26,9 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
       chosenStore,
       institutionId,
       type,
-      hasAfternoonCare: req.body.hasAfternoonCare,
+      hasAfternoonCare,
+      regularOperatorId: regularOperatorId || null, 
+      isActive: true, 
     });
 
     await newClass.save();
@@ -30,18 +38,16 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-//get all classes by institution id
 export const getClassesByInstitutionId = async (req: Request, res: Response): Promise<void> => {
   try {
     const { institutionId } = req.params;
 
-    // ObjectId validation
     if (!mongoose.Types.ObjectId.isValid(institutionId)) {
       res.status(400).json({ error: 'Invalid institutionId format' });
       return;
     }
 
-    const classes = await Class.find({ institutionId });
+    const classes = await Class.find({ institutionId, isActive: true });
     res.json(classes);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -50,22 +56,25 @@ export const getClassesByInstitutionId = async (req: Request, res: Response): Pr
 
 export const getAllClasses = async (req: Request, res: Response): Promise<void> => {
   try {
-    const classes = await Class.find();
+    const classes = await Class.find({ isActive: true });
     res.json(classes);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
 };
 
-//delete class by id
 export const deleteClass = async (req: Request, res: Response): Promise<void> => {
   try {
-    const classToDelete = await Class.findByIdAndDelete(req.params.id);
+    const classToDelete = await Class.findOne({ _id: req.params.id, isActive: true });
+
     if (!classToDelete) {
-      res.status(404).json({ error: 'Class not found' });
+      res.status(404).json({ error: 'Class not found or already deactivated' });
       return;
     }
-    res.status(204).end();
+    
+    await Class.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+    res.status(200).json({ message: 'Class deactivated successfully' });
+
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

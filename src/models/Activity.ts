@@ -1,17 +1,20 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ActivityDocument extends Document {
-  classId: mongoose.Types.ObjectId; // הכיתה שבה מתקיימת הפעילות
-  operatorId: mongoose.Types.ObjectId; // המפעיל של הפעילות
-  date: Date; // תאריך הפעילות
-  description?: string; // תיאור הפעילות (אופציונלי)
+  classId: Types.ObjectId;
+  operatorId: Types.ObjectId;
+  date: Date;
+  description?: string;
 }
 
 const ActivitySchema: Schema = new Schema({
-  classId: { type: mongoose.Types.ObjectId, ref: 'Class', required: true }, // מזהה כיתה
-  operatorId: { type: mongoose.Types.ObjectId, ref: 'Operator', required: true }, // מזהה מפעיל
-  date: { type: Date, required: true }, // תאריך הפעילות
-  description: { type: String }, // תיאור הפעילות
+  classId: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
+  operatorId: { type: Schema.Types.ObjectId, ref: 'Operator', required: true },
+  date: { type: Date, required: true },
+  description: { type: String },
 });
+
+ActivitySchema.index({ classId: 1 });
+ActivitySchema.index({ operatorId: 1 });
 
 export default mongoose.model<ActivityDocument>('Activity', ActivitySchema, 'activities-collections');

@@ -1,30 +1,23 @@
-// src/models/Store.ts
-import mongoose, { Schema, Document } from 'mongoose';
-
-interface ContactPerson {
-  name: string;
-  email: string;
-  phone: string;
-}
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface StoreDocument extends Document {
   name: string;
   address: string;
   businessId: string;
-  contactPersons: ContactPerson[]; // מערך של אנשי קשר
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  regularClasses: Types.ObjectId[];
 }
-
-const ContactPersonSchema: Schema = new Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  phone: { type: String, required: true },
-});
 
 const StoreSchema: Schema = new Schema({
   name: { type: String, required: true },
   address: { type: String, required: true },
-  businessId: { type: String }, // ח.פ
-  contactPersons: { type: [ContactPersonSchema], required: true }, // מערך של אנשי קשר
+  businessId: { type: String },
+  contactName: { type: String, required: true },
+  contactEmail: { type: String, required: true },
+  contactPhone: { type: String, required: true },
+  regularClasses: [{ type: Schema.Types.ObjectId, ref: 'Class' }],
 });
 
 export default mongoose.model<StoreDocument>('Store', StoreSchema, 'stores-collections');

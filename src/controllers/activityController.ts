@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import Activity from '../models/Activity';
 
 export const addActivity = async (req: Request, res: Response): Promise<void> => {
-  console.log("-------------",req.body)
     try {
       const { classId, operatorId, date, description } = req.body;
   
@@ -17,8 +16,6 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
         date,
         description,
       });
-
-      console.log("--------",newActivity)
   
       await newActivity.save();
       res.status(201).json(newActivity);
@@ -63,19 +60,19 @@ export const getActivitiesByOperator = async (req: Request, res: Response): Prom
   };
   
 
-export const updatePresence = async (req: Request, res: Response): Promise<void> => {
+export const updateActivity = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { activityId, presence } = req.body;
+    const { activityId, activity } = req.body;
 
-    if (!activityId || !presence) {
-      res.status(400).json({ error: 'Activity ID and presence data are required' });
+    if (!activityId || !activity) {
+      res.status(400).json({ error: 'Activity ID and activity data are required' });
       return;
     }
 
     const updatedActivity = await Activity.findByIdAndUpdate(
       activityId,
-      { $push: { presence } },
-      { new: true }
+      { $set: activity },
+      { new: true, runValidators: true }
     );
 
     if (!updatedActivity) {
