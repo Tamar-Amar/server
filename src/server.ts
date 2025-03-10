@@ -17,6 +17,7 @@ import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import authRoutes from './routes/authRoutes';
 import { generateAttendancePdf } from './utils/generatePdf';
+import contactRoutes from './routes/contactRoutes';
 
 
 dotenv.config();
@@ -46,6 +47,7 @@ app.use("/api/operators", operatorRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/contacts', contactRoutes);
 
 const path = require('path');
 

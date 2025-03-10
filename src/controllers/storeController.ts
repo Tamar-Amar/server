@@ -49,3 +49,24 @@ export const deleteStore = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+export const updateStore = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { regularClasses } = req.body;
+
+    const store = await Store.findById(id);
+    if (!store) {
+      res.status(404).json({ error: "Store not found" });
+      return;
+    }
+
+    if (regularClasses) {
+      await Store.findByIdAndUpdate(id, { $addToSet: { regularClasses: { $each: regularClasses } } }, { new: true });
+    }
+
+    res.status(200).json({ message: "Store updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};

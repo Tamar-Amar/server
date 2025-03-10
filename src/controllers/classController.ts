@@ -79,3 +79,26 @@ export const deleteClass = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+export const updateClass = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ error: 'Invalid class ID format' });
+      return;
+    }
+
+    const updatedClass = await Class.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+
+    if (!updatedClass) {
+      res.status(404).json({ error: 'Class not found' });
+      return;
+    }
+
+    res.status(200).json(updatedClass);
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+};
