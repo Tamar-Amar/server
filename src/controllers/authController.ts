@@ -15,8 +15,6 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
 
     const operator = await Operator.findOne({ id });
 
-    
-
     if (!operator) {
       res.status(404).json({ message: 'מפעיל לא נמצא' });
       return;
@@ -34,7 +32,9 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign({ id: operator._id, role: 'operator' }, process.env.JWT_SECRET as string, { expiresIn: '20d' });
     res.status(200).json({ message: 'כניסה מוצלחת', token, role: 'operator' });
-  } catch (error) {
+  } 
+  
+  catch (error) {
     console.error('Error during login:', error);
     res.status(500).json({ message: 'שגיאה בשרת' });
   }

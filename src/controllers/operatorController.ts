@@ -3,8 +3,11 @@ import Operator from '../models/Operator';
 import BankDetails from '../models/BankDetails';
 import jwt from 'jsonwebtoken';
 import Class from '../models/Class';
+import { Types } from 'mongoose';
 
 export const addOperator = async (req: Request, res: Response): Promise<void> => {
+  console.log('addOperator');
+
   try {
     const { 
       firstName, 
@@ -23,7 +26,7 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       educationType 
     } = req.body;
 
-    if (!firstName || !phone || !description || !paymentMethod || !bankDetails || !id || !password || !gender || !educationType) {
+    if (!firstName || !phone || !description || !paymentMethod ||  !id || !password || !gender || !educationType) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
@@ -36,6 +39,7 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       accountNumber: bankDetails.accountNumber,
       branchNumber: bankDetails.branchNumber,
     });
+
     await newBankDetails.save();
 
     const newOperator = new Operator({
