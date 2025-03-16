@@ -4,8 +4,10 @@ import Operator from '../models/Operator';
 
 export const logAuth = async (req: Request, res: Response): Promise<void> => {
   const { id, password } = req.body;
+  console.log('Login server:', id, password);
   try {
     const isAdmin = id === process.env.ADMIN_ID && password === process.env.ADMIN_PASSWORD;
+    console.log('isAdmin:', isAdmin);
 
     if (isAdmin) {
       const adminToken = jwt.sign({ id, role: 'admin' }, process.env.JWT_SECRET as string, { expiresIn: '20d' });

@@ -2,27 +2,37 @@ import { Request, Response } from 'express';
 import Activity from '../models/Activity';
 
 export const addActivity = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { classId, operatorId, date, description } = req.body;
-  
-      if (!classId || !operatorId || !date) {
-        res.status(400).json({ error: 'Missing required fields: classId, operatorId, or date' });
-        return;
-      }
-  
-      const newActivity = new Activity({
-        classId,
-        operatorId,
-        date,
-        description,
-      });
-  
-      await newActivity.save();
-      res.status(201).json(newActivity);
-    } catch (err) {
-      res.status(500).json({ error: (err as Error).message });
+  try {
+    const { classId, operatorId, date, description } = req.body;
+
+    if (!classId || !operatorId || !date) {
+      res.status(400).json({ error: "Missing required fields: classId, operatorId, or date" });
+      return;
     }
-  };
+
+    // בדיקת קיום פעילות עם `populate()` כדי לקבל מידע מלא
+    const existingActivity = await Activity.findOne({ classId, operatorId, date })
+      .populate("classId", "name uniqueSymbol") // מחזיר רק את שם הקבוצה והסמל שלה
+      .populate("operatorId", "firstName lastName"); // מחזיר את שם המפעיל
+
+    if (existingActivity) {
+      res.status(200).json({
+        message: "כבר קיימת פעילות זהה",
+        existingActivity,
+      });
+      return;
+    }
+
+    // יצירת פעילות חדשה
+    const newActivity = new Activity({ classId, operatorId, date, description });
+    await newActivity.save();
+
+    res.status(201).json(newActivity);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
 
 export const getActivitiesByClass = async (req: Request, res: Response): Promise<void> => {
     try {
