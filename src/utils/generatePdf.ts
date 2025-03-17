@@ -109,4 +109,3 @@ export const generateAttendancePdf = (month: string, res: Response) => {
   doc.lineWidth(0.5).moveTo(380, 135).lineTo(380, y).stroke();
   doc.end();
 };
-

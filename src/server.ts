@@ -10,11 +10,6 @@ import operatorRoutes from './routes/operatorRoutes';
 import cors from 'cors';
 import purchaseRoutes from './routes/purchaseRoutes';
 import invoiceRoutes from './routes/invoiceRoutes';
-import PDFDocument from 'pdfkit';
-import dayjs from 'dayjs';
-import Operator from './models/Operator';
-import jwt from 'jsonwebtoken';
-import { Request, Response } from 'express';
 import authRoutes from './routes/authRoutes';
 import { generateAttendancePdf } from './utils/generatePdf';
 import contactRoutes from './routes/contactRoutes';
@@ -36,7 +31,6 @@ app.use(cors({
 
 app.use(express.json());
 
-
 connectDB();
 
 app.use('/api/institutions', institutionRoutes);
@@ -50,12 +44,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/contacts', contactRoutes);
 
 const path = require('path');
-
 app.post("/api/generate-pdf", (req, res) => {
   const { month } = req.body;
   generateAttendancePdf(month, res);
 });
-
 
 app.get('/', (req, res) => {
   res.send('API is running...');
@@ -63,6 +55,5 @@ app.get('/', (req, res) => {
 
 app.use(errorHandler);
 
-//listen to the port
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

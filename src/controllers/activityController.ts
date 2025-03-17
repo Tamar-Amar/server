@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import Activity from '../models/Activity';
 
+import dayjs from "dayjs";
+
+
 export const addActivity = async (req: Request, res: Response): Promise<void> => {
   try {
     const { classId, operatorId, date, description } = req.body;
@@ -10,12 +13,22 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // בדיקת קיום פעילות עם `populate()` כדי לקבל מידע מלא
-    const existingActivity = await Activity.findOne({ classId, operatorId, date })
-      .populate("classId", "name uniqueSymbol") // מחזיר רק את שם הקבוצה והסמל שלה
-      .populate("operatorId", "firstName lastName"); // מחזיר את שם המפעיל
+    const activityDate = dayjs(date).startOf("day").toDate(); 
 
-    if (existingActivity) {
+    const existingActivity = await Activity.findOne({
+      classId,
+      operatorId,
+      date: {
+        $gte: activityDate, 
+        $lt: dayjs(activityDate).add(1, "day").toDate(),
+      }
+    })
+      .populate("classId", "name uniqueSymbol")
+      .populate("operatorId", "firstName lastName");
+
+    console.log("existingActivity:", existingActivity);
+
+    if (existingActivity!=null){
       res.status(200).json({
         message: "כבר קיימת פעילות זהה",
         existingActivity,
@@ -24,7 +37,7 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
     }
 
     // יצירת פעילות חדשה
-    const newActivity = new Activity({ classId, operatorId, date, description });
+    const newActivity = new Activity({ classId, operatorId, date: activityDate, description });
     await newActivity.save();
 
     res.status(201).json(newActivity);
