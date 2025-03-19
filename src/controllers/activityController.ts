@@ -8,25 +8,23 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
   try {
     const { classId, operatorId, date, description } = req.body;
 
+    console.log(`adding activity: classId=${classId}, operatorId=${operatorId}, date=${date}, description=${description}`);
     if (!classId || !operatorId || !date) {
       res.status(400).json({ error: "Missing required fields: classId, operatorId, or date" });
       return;
     }
 
-    const activityDate = dayjs(date).startOf("day").toDate(); 
+    const activityDate = new Date(date); 
 
-    const existingActivity = await Activity.findOne({
-      classId,
-      operatorId,
-      date: {
-        $gte: activityDate, 
-        $lt: dayjs(activityDate).add(1, "day").toDate(),
-      }
-    })
+      const existingActivity = await Activity.findOne({
+        classId,
+        operatorId,
+        date: activityDate 
+      })
       .populate("classId", "name uniqueSymbol")
       .populate("operatorId", "firstName lastName");
 
-    console.log("existingActivity:", existingActivity);
+
 
     if (existingActivity!=null){
       res.status(200).json({
@@ -36,7 +34,6 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // יצירת פעילות חדשה
     const newActivity = new Activity({ classId, operatorId, date: activityDate, description });
     await newActivity.save();
 
