@@ -3,7 +3,6 @@ import Operator from '../models/Operator';
 import BankDetails from '../models/BankDetails';
 import jwt from 'jsonwebtoken';
 import Class from '../models/Class';
-import { Types } from 'mongoose';
 
 export const addOperator = async (req: Request, res: Response): Promise<void> => {
   console.log('addOperator');
@@ -171,5 +170,33 @@ export const getOperatorById = async (req: Request, res: Response): Promise<void
     res.status(200).json(operator);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+export const updateOperatorWeeklySchedule = async (req: Request, res: Response): Promise<void> => {
+  try {
+    console.log('updateOperatorWeeklySchedule');
+    const { id } = req.params;
+    const { weeklySchedule } = req.body; 
+
+    if (!weeklySchedule || !Array.isArray(weeklySchedule)) {
+      res.status(400).json({ error: "Invalid weeklySchedule format" });
+      return;
+    }
+
+    const updatedOperator = await Operator.findByIdAndUpdate(
+      id,
+      { weeklySchedule },
+      { new: true, runValidators: true } 
+    );
+
+    if (!updatedOperator) {
+      res.status(404).json({ error: "Operator not found" });
+      return;
+    }
+
+    res.status(200).json(updatedOperator);
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
   }
 };

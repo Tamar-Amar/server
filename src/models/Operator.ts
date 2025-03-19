@@ -6,6 +6,11 @@ interface BusinessDetails {
   businessName: string;
 }
 
+interface WeeklySchedule {
+  day: 'ראשון' | 'שני' | 'שלישי' | 'רביעי' | 'חמישי';
+  classes: Types.ObjectId[];
+}
+
 export interface OperatorDocument extends Document {
   firstName: string;
   lastName: string;
@@ -24,11 +29,17 @@ export interface OperatorDocument extends Document {
   gender: 'בנים' | 'בנות' | 'גם וגם'; 
   educationType: 'רגיל' | 'מיוחד' | 'גם וגם'; 
   isActive: boolean;
+  weeklySchedule: WeeklySchedule[];
 }
 
 const BusinessDetailsSchema: Schema = new Schema({
   businessId: { type: String, required: true },
   businessName: { type: String, required: true },
+});
+
+const WeeklyScheduleSchema: Schema = new Schema({
+  day: { type: String, enum: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'], required: true },
+  classes: [{ type: Schema.Types.ObjectId, ref: 'Class', maxlength: 4 }]
 });
 
 const OperatorSchema: Schema = new Schema({
@@ -47,7 +58,8 @@ const OperatorSchema: Schema = new Schema({
   regularClasses: [{ type: Schema.Types.ObjectId, ref: 'Class' }],
   gender: { type: String, enum: ['בנים', 'בנות', 'גם וגם'], required: true, default: 'גם וגם' },
   educationType: { type: String, enum: ['רגיל', 'מיוחד', 'גם וגם'], required: true, default: 'גם וגם' }, 
-  isActive:{type: Boolean, default: true}
+  isActive:{type: Boolean, default: true},
+  weeklySchedule: { type: [WeeklyScheduleSchema], default: [] } 
 });
 
 export default mongoose.model<OperatorDocument>('Operator', OperatorSchema, 'operators-collections');
