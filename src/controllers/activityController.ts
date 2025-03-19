@@ -7,8 +7,6 @@ import dayjs from "dayjs";
 export const addActivity = async (req: Request, res: Response): Promise<void> => {
   try {
     const { classId, operatorId, date, description } = req.body;
-
-    console.log(`adding activity: classId=${classId}, operatorId=${operatorId}, date=${date}, description=${description}`);
     if (!classId || !operatorId || !date) {
       res.status(400).json({ error: "Missing required fields: classId, operatorId, or date" });
       return;

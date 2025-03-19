@@ -5,8 +5,6 @@ import jwt from 'jsonwebtoken';
 import Class from '../models/Class';
 
 export const addOperator = async (req: Request, res: Response): Promise<void> => {
-  console.log('addOperator');
-
   try {
     const { 
       firstName, 
@@ -175,7 +173,6 @@ export const getOperatorById = async (req: Request, res: Response): Promise<void
 
 export const updateOperatorWeeklySchedule = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('updateOperatorWeeklySchedule');
     const { id } = req.params;
     const { weeklySchedule } = req.body; 
 

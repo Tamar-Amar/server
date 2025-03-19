@@ -17,7 +17,6 @@ const daysOfWeekHebrew: { [key: string]: string } = {
   
 export const generateAttendancePdf = (month: string, res: Response) => {
   const selectedDate = dayjs(month);
-  console.log(selectedDate);
   const startDate = selectedDate.subtract(1, "month").date(26);
   const endDate = selectedDate.date(25);
   const reportData = [];
@@ -47,8 +46,6 @@ export const generateAttendancePdf = (month: string, res: Response) => {
   res.setHeader("Content-Disposition", 'attachment; filename="attendance_report.pdf"');
   doc.pipe(res);
   const revDate= selectedDate.format("MM-YYYY");
-  console.log(revDate);
-
   doc
   .fontSize(14)
   .text("דוח נוכחות לחודש ", 350,50,{

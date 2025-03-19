@@ -2,24 +2,20 @@ import { Request, Response } from 'express';
 import Contact from '../models/Contact';
 import mongoose from 'mongoose';
 
-// 📌 יצירת איש קשר חדש
 export const addContact = async (req: Request, res: Response): Promise<void> => {
     try {
       let { name, phone, email, description, entityType, entityId } = req.body;
-      console.log("req.body:", req.body);
   
       if (!name || !phone || !email || !entityType || !entityId) {
         res.status(400).json({ error: "Missing required fields" });
         return;
       }
-  
-      // בדיקה ש-entityType הוא ערך תקין
+
       if (!["Institution", "Store", "Class"].includes(entityType)) {
         res.status(400).json({ error: "Invalid entityType" });
         return;
       }
-  
-      // בדיקה ש-entityId תקין
+
       if (!mongoose.Types.ObjectId.isValid(entityId)) {
         res.status(400).json({ error: "Invalid entityId" });
         return;
@@ -33,8 +29,7 @@ export const addContact = async (req: Request, res: Response): Promise<void> => 
         entityType,
         entityId: new mongoose.Types.ObjectId(entityId),
       });
-  
-      console.log("newContact:", newContact);
+
       await newContact.save();
       res.status(201).json(newContact);
     } catch (err) {
