@@ -1,0 +1,24 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '18.x'
+    displayName: 'Install Node.js'
+
+  - script: |
+      npm install
+    displayName: 'Install dependencies'
+
+  - script: |
+      npm run build
+    displayName: 'Build TypeScript project'
+
+  # אופציונלי: להריץ את השרת (למשל להרצה זמנית לבדיקה)
+  # - script: |
+  #     npm start
+  #   displayName: 'Start server'
