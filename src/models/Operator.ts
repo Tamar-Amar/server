@@ -51,6 +51,7 @@ const OperatorSchema: Schema = new Schema({
   id: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   address: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   description: { type: String },
   paymentMethod: { type: String, enum: ['חשבונית', 'תלוש', 'לא נבחר'], required: true },
   businessDetails: { type: BusinessDetailsSchema, required: false },
