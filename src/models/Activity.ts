@@ -5,6 +5,7 @@ export interface ActivityDocument extends Document {
   operatorId: Types.ObjectId;
   date: Date;
   description?: string;
+  monthPayment: string;
 }
 
 const ActivitySchema: Schema = new Schema({
@@ -12,6 +13,7 @@ const ActivitySchema: Schema = new Schema({
   operatorId: { type: Schema.Types.ObjectId, ref: 'Operator', required: true },
   date: { type: Date, required: true },
   description: { type: String },
+  monthPayment: { type: String , default: "00-00" },
 });
 
 ActivitySchema.index({ classId: 1 });

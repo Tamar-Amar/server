@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import Activity from '../models/Activity';
 
-import dayjs from "dayjs";
 
 
 export const addActivity = async (req: Request, res: Response): Promise<void> => {
@@ -13,6 +12,7 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
     }
 
     const activityDate = new Date(date); 
+    const paymentMonth = `${String(activityDate.getMonth() + 1).padStart(2, "0")}-${String(activityDate.getFullYear()).slice(2)}`;
 
       const existingActivity = await Activity.findOne({
         classId,
@@ -32,7 +32,7 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const newActivity = new Activity({ classId, operatorId, date: activityDate, description });
+    const newActivity = new Activity({ classId, operatorId, date: activityDate, description ,paymentMonth});
     await newActivity.save();
 
     res.status(201).json(newActivity);
