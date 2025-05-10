@@ -5,15 +5,13 @@ import Activity from '../models/Activity';
 
 export const addActivity = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { classId, operatorId, date, description } = req.body;
+    const { classId, operatorId, date, description,monthPayment } = req.body;
     if (!classId || !operatorId || !date) {
       res.status(400).json({ error: "Missing required fields: classId, operatorId, or date" });
       return;
     }
 
     const activityDate = new Date(date); 
-    const paymentMonth = `${String(activityDate.getMonth() + 1).padStart(2, "0")}-${String(activityDate.getFullYear()).slice(2)}`;
-
       const existingActivity = await Activity.findOne({
         classId,
         operatorId,
@@ -32,7 +30,8 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const newActivity = new Activity({ classId, operatorId, date: activityDate, description ,paymentMonth});
+    const newActivity = new Activity({ classId, operatorId, date: activityDate, description ,monthPayment});
+    console.log("activity for saving:", newActivity)
     await newActivity.save();
 
     res.status(201).json(newActivity);
