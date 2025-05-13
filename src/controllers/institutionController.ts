@@ -53,3 +53,24 @@ export const deleteInstitution = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+export const updateInstitution = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const updatedInstitution = await Institution.findOneAndUpdate(
+      { _id: id, isActive: true }, 
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedInstitution) {
+      res.status(404).json({ error: 'Institution not found or inactive' });
+      return;
+    }
+
+    res.status(200).json(updatedInstitution);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
