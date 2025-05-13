@@ -122,32 +122,46 @@ export const updateOperator = async (req: Request, res: Response): Promise<void>
 };
 
 export const getCurrentOperator = async (req: Request, res: Response): Promise<void> => {
+  console.log("getCurrentOperator");
   try {
     const authHeader = req.headers.authorization;
+    console.log("authHeader",authHeader)
     if (!authHeader) {
       res.status(401).json({ error: 'Missing Authorization header' });
       return;
     }
-    const token = authHeader.split(' ')[1];
 
-    const decoded = jwt.decode(token, { complete: true }) as any;
-    if (decoded?.payload?.exp * 1000 < Date.now()) {
-      console.error("Token expired:", new Date(decoded.payload.exp * 1000));
-      res.status(401).json({ error: "Token expired" });
+    const token = authHeader.split(' ')[1];
+    console.log("Token:", token);
+
+    // verify גם בודק exp
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string, role: string };
+    console.log("Decoded:", decoded);
+
+    if (!decoded.id) {
+      res.status(401).json({ error: "Invalid token payload" });
       return;
     }
 
-    const operator = await Operator.findById(decoded.payload.id).populate("bankDetailsId");
+    const operator = await Operator.findById(decoded.id).populate("bankDetailsId");
     if (!operator) {
       res.status(404).json({ error: 'Operator not found' });
       return;
     }
 
-    res.status(200).json(operator); 
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(200).json(operator);
+  } catch (err: any) {
+    console.error("getCurrentOperator error:", err);
+    if (err.name === 'TokenExpiredError') {
+      res.status(401).json({ error: "Token expired" });
+    } else if (err.name === 'JsonWebTokenError') {
+      res.status(401).json({ error: "Invalid token" });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
+
 
 export const getOperatorById = async (req: Request, res: Response): Promise<void> => {
   try {

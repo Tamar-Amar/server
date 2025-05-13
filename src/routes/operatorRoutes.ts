@@ -4,11 +4,12 @@ import { addOperator, getOperators, deleteOperator, updateOperator, getCurrentOp
 const router = express.Router();
 
 router.post('/', addOperator);
+router.get('/me', getCurrentOperator); 
 router.get('/:id', getOperatorById);
 router.get('/', getOperators);
 router.delete('/:id', deleteOperator);
 router.put('/:id', updateOperator); 
-router.get('/me', getCurrentOperator); 
+
 router.put('/:id/weekly-schedule', updateOperatorWeeklySchedule);
 
 
