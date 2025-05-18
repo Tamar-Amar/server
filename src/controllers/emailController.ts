@@ -5,6 +5,7 @@ import Operator from "../models/Operator";
 import Class from "../models/Class";
 import { Types } from "mongoose";
 import { generateEmailHtml } from "../utils/emailTemplates";
+import EmailLog from "../models/EmailLog";
 
 export const sendEmailController = async (req: Request, res: Response): Promise<void> => {
   const { to, subject, text, html } = req.body;
@@ -157,11 +158,22 @@ export const sendMultipleEmailsController = async (req: Request, res: Response) 
         await sendEmail(to, subject, text, undefined, undefined, { cc: "btrcrs25@gmail.com" });
       }
 
+
       results.push({ operatorId, email: to, success: true });
     } catch (error: any) {
       results.push({ operatorId, email: "", success: false, error: error.message });
     }
   }
+
+  await EmailLog.create({
+    date: new Date(),
+    operatorIds,
+    subject,
+    message: type === 'text' ? text : undefined,
+    month: type === 'pdf' ? month : undefined,
+    type,
+    results,
+  });
 
   res.status(200).json({ message: "שליחת מיילים הושלמה", results });
 };
