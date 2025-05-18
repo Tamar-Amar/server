@@ -129,7 +129,7 @@ export const getCurrentOperator = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const token = authHeader.split(' ')[1];p
+    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string, role: string };
 
     if (!decoded.id) {
