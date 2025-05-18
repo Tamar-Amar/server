@@ -1,16 +1,28 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
-import fs from 'fs';
 import Activity from '../models/Activity';
 import Class from '../models/Class';
 import '../models/Operator';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-const CREDENTIALS = JSON.parse(
-  fs.readFileSync('./src/utils/google-credentials.json', 'utf-8')
-);
+
+const auth = new JWT({
+  email: process.env.GOOGLE_CLIENT_EMAIL,
+  
+  key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  scopes: SCOPES,
+});
+
+const sheets = google.sheets({ version: 'v4', auth });
+
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1byRItDPN42He3Hb2j-k7vtnH9EtmUV5l3NQp12u5oqM';
+const SHEET_NAME = 'google api';
 
 type PopulatedActivity = {
   classId: {
@@ -25,17 +37,6 @@ type PopulatedActivity = {
   description?: string;
   monthPayment: string;
 };
-
-const auth = new JWT({
-  email: CREDENTIALS.client_email,
-  key: CREDENTIALS.private_key,
-  scopes: SCOPES,
-});
-
-const sheets = google.sheets({ version: 'v4', auth });
-
-const SPREADSHEET_ID = '1byRItDPN42He3Hb2j-k7vtnH9EtmUV5l3NQp12u5oqM';
-const SHEET_NAME = 'google api';
 
 export const uploadActivitiesToGoogleSheet = async (activities: PopulatedActivity[]) => {
   const startDate = new Date('2024-10-27');
@@ -100,4 +101,5 @@ export const uploadActivitiesToGoogleSheet = async (activities: PopulatedActivit
     },
   });
 
+  console.log('✅ הדוח נשלח ל־Google Sheets');
 };
