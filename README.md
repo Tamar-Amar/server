@@ -85,7 +85,6 @@ All data fetching uses filters and optimization:
   - By operator
   - By class
   - By institution
-  - By environment
 
 ---
 
