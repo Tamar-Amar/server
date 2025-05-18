@@ -109,8 +109,6 @@ export const sendPdfController = async (req: Request, res: Response): Promise<vo
 
 export const sendMultipleEmailsController = async (req: Request, res: Response) => {
   const { operatorIds, month, type, subject, text } = req.body;
-  console.log("Received data:", req.body);
-
   const results: { operatorId: string; email: string; success: boolean; error?: string }[] = [];
 
   for (const operatorId of operatorIds) {
