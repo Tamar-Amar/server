@@ -122,21 +122,15 @@ export const updateOperator = async (req: Request, res: Response): Promise<void>
 };
 
 export const getCurrentOperator = async (req: Request, res: Response): Promise<void> => {
-  console.log("getCurrentOperator");
   try {
     const authHeader = req.headers.authorization;
-    console.log("authHeader",authHeader)
     if (!authHeader) {
       res.status(401).json({ error: 'Missing Authorization header' });
       return;
     }
 
     const token = authHeader.split(' ')[1];
-    console.log("Token:", token);
-
-    // verify גם בודק exp
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string, role: string };
-    console.log("Decoded:", decoded);
 
     if (!decoded.id) {
       res.status(401).json({ error: "Invalid token payload" });

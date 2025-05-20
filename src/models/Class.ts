@@ -41,8 +41,6 @@ const ClassSchema: Schema = new Schema({
 
 ClassSchema.index({ institutionId: 1 }); 
 ClassSchema.index({ isActive: 1 });
-ClassSchema.index({ uniqueSymbol: 1 }, { unique: true });
-
 ClassSchema.pre('save', function (next) {
   if (this.type === 'כיתה') {
     this.monthlyBudget = 250;

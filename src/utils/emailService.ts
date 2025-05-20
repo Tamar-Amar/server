@@ -37,7 +37,6 @@ export const sendEmail = async (
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("📨 Email with PDF sent");
   } catch (error) {
     console.error("❌ Failed to send email:", error);
     throw error;

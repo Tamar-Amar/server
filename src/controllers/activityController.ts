@@ -31,7 +31,6 @@ export const addActivity = async (req: Request, res: Response): Promise<void> =>
     }
 
     const newActivity = new Activity({ classId, operatorId, date: activityDate, description ,monthPayment});
-    console.log("activity for saving:", newActivity)
     await newActivity.save();
 
     res.status(201).json(newActivity);
