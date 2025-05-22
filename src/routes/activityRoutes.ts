@@ -14,12 +14,18 @@ dotenv.config();
 const router = express.Router();
 
 type PopulatedActivity = {
-  classId: { uniqueSymbol: string; name: string };
+  classId: {
+    uniqueSymbol: string;
+    name: string;
+    gender: string;
+    type: string;
+  };
   operatorId: { firstName: string; lastName: string } | string | null;
   date: Date | string;
   description?: string;
   monthPayment: string;
 };
+
 
 router.post('/', addActivity);
 router.get('/actByCls/:classId', getActivitiesByClass);
@@ -31,15 +37,23 @@ router.delete('/:id', deleteActivity);
 router.post('/export-to-sheets', async (req, res) => {
   try {
     const activities = await Activity.find()
-      .populate('classId', 'uniqueSymbol name')
+      .populate('classId', 'uniqueSymbol name gender type')
       .populate('operatorId', 'firstName lastName')
       .lean() as unknown as PopulatedActivity[];
 
-    const allClasses = await Class.find({}, 'uniqueSymbol name').lean();
+    const allClasses = await Class.find({}, 'uniqueSymbol name gender type').lean();
 
     const weeks: { start: Date; end: Date }[] = [];
     let current = new Date('2024-10-27');
     const endDate = new Date('2025-06-30');
+
+    allClasses.forEach(cls => {
+if (String(cls.uniqueSymbol).includes('748020')) {
+  console.log('🔍 FOUND:', cls._id, cls.name, cls.uniqueSymbol);
+}
+
+});
+
 
     while (current <= endDate) {
       const start = new Date(current);
@@ -48,11 +62,12 @@ router.post('/export-to-sheets', async (req, res) => {
       weeks.push({ start, end });
       current.setDate(current.getDate() + 7);
     }
-
-    const reportData: Record<string, { name: string; weeklyOperators: string[][] }> = {};
+    const reportData: Record<string, { name: string; gender: string; type: string; weeklyOperators: string[][] }> = {};
     allClasses.forEach(cls => {
       reportData[cls.uniqueSymbol] = {
         name: cls.name,
+        gender: cls.gender,
+        type: cls.type,
         weeklyOperators: Array.from({ length: weeks.length }, () => []),
       };
     });

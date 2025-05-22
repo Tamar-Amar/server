@@ -1,3 +1,4 @@
+
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import Activity from '../models/Activity';
@@ -12,7 +13,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const SHEET_NAME = 'google api';
 
 type PopulatedActivity = {
-  classId: { uniqueSymbol: string; name: string };
+  classId: { uniqueSymbol: string; name: string; gender: string; type: string };
   operatorId: { firstName: string; lastName: string } | string | null;
   date: Date | string;
   description?: string;
@@ -28,10 +29,20 @@ export const generateYearlySheet = async (
 ) => {
   const holidayDates = new Set(holidays.map(h => h.date));
 
-  const reportData: Record<string, { name: string; weeklyOperators: string[][] }> = {};
+  const isFullHolidayWeek = (week: { start: Date }) => {
+    const days = Array.from({ length: 5 }, (_, i) => {
+      const d = new Date(week.start.getTime() + i * 86400000);
+      return d.toLocaleDateString('sv-SE');
+    });
+    return days.every(dateStr => holidayDates.has(dateStr));
+  };
+
+  const reportData: Record<string, { name: string; gender: string; type: string; weeklyOperators: string[][] }> = {};
   allClasses.forEach(cls => {
     reportData[cls.uniqueSymbol] = {
       name: cls.name,
+      gender: cls.gender,
+      type: cls.type,
       weeklyOperators: Array.from({ length: weeks.length }, () => []),
     };
   });
@@ -39,32 +50,27 @@ export const generateYearlySheet = async (
   activities.forEach(activity => {
     if (typeof activity.classId === 'string' || !activity.classId || !activity.date) return;
     const date = new Date(activity.date);
+    const key = activity.classId.uniqueSymbol;
+    const weekIndex = weeks.findIndex(({ start, end }) => date >= start && date <= end);
+    if (weekIndex === -1) return;
+
     let operator = 'לא ידוע';
     if (activity.operatorId && typeof activity.operatorId !== 'string') {
       operator = `${activity.operatorId.firstName} ${activity.operatorId.lastName}`;
     }
-    const weekIndex = weeks.findIndex(({ start, end }) => date >= start && date <= end);
-    if (weekIndex === -1) return;
-    const key = activity.classId.uniqueSymbol;
+
     reportData[key]?.weeklyOperators[weekIndex].push(operator);
   });
 
-const isFullHolidayWeek = (week: { start: Date }) => {
-  const days = Array.from({ length: 5 }, (_, i) => {
-    const d = new Date(week.start.getTime() + i * 86400000);
-    return d.toLocaleDateString('sv-SE'); 
-  });
-  return days.every(dateStr => holidayDates.has(dateStr));
-};
+  const row1 = ['סמל', 'שם', 'מין', 'סוג', ...weeks.map((_, i) => `שבוע ${i + 1}`), 'ניצול', 'צפי', 'פער'];
+  const row2 = ['', '', '', '', ...weeks.map(w => w.start.toLocaleDateString('he-IL')), '', '', ''];
+  const row3 = ['', '', '', '', ...weeks.map(w => w.end.toLocaleDateString('he-IL')), '', '', ''];
 
-
-  const row1 = ['סמל', 'שם', ...weeks.map((_, i) => `שבוע ${i + 1}`), 'סה"כ'];
-  const row2 = ['', '', ...weeks.map(w => w.start.toLocaleDateString('he-IL')), ''];
-  const row3 = ['', '', ...weeks.map(w => w.end.toLocaleDateString('he-IL')), ''];
+  const activeWeeksCount = weeks.filter(w => !isFullHolidayWeek(w)).length;
 
   const dataRows = allClasses.map(cls => {
     const classData = reportData[cls.uniqueSymbol];
-    const row = [cls.uniqueSymbol, cls.name];
+    const row = [cls.uniqueSymbol, cls.name, cls.gender, cls.type];
     let total = 0;
 
     weeks.forEach(w => {
@@ -77,17 +83,20 @@ const isFullHolidayWeek = (week: { start: Date }) => {
       }
     });
 
-    row.push(`${total}`);
+    const forecast = activeWeeksCount;
+    const diff = forecast - total;
+    row.push(`${total}`);      // ניצול
+    row.push(`${forecast}`);   // צפי
+    row.push(`${diff}`);       // פער
     return row;
   });
 
-  const footerRow = ['', '', ...weeks.map(w => isFullHolidayWeek(w) ? 'ללא צהרון' : ''), ''];
-
+  const footerRow = ['', '', '', '', ...weeks.map(w => isFullHolidayWeek(w) ? 'ללא צהרון' : ''), '', '', ''];
   const fullData = [row1, row2, row3, ...dataRows, footerRow];
 
   await sheets.spreadsheets.values.update({
     spreadsheetId,
-    range: `'${SHEET_NAME}'!A1`,
+    range: `'google api'!A1`,
     valueInputOption: 'RAW',
     requestBody: { values: fullData },
   });
@@ -99,7 +108,7 @@ export const generateMonthlySheets = async (
   spreadsheetId: string,
   allClasses: any[],
   weeks: { start: Date; end: Date }[],
-  reportData: Record<string, { name: string; weeklyOperators: string[][] }>
+  reportData: Record<string, { name: string; gender: string; type: string; weeklyOperators: string[][] }>
 ) => {
   const holidayDates = new Set(holidays.map(h => h.date));
   const allowedMonths = [10, 11, 0, 1, 2, 3, 4, 5];
@@ -107,6 +116,14 @@ export const generateMonthlySheets = async (
     0: 'ינואר', 1: 'פברואר', 2: 'מרץ', 3: 'אפריל',
     4: 'מאי', 5: 'יוני', 6: 'יולי', 7: 'אוגוסט',
     8: 'ספטמבר', 9: 'אוקטובר', 10: 'נובמבר', 11: 'דצמבר',
+  };
+
+  const isFullHolidayWeek = (week: { start: Date }) => {
+    const days = Array.from({ length: 5 }, (_, i) => {
+      const d = new Date(week.start.getTime() + i * 86400000);
+      return d.toLocaleDateString('sv-SE');
+    });
+    return days.every(dateStr => holidayDates.has(dateStr));
   };
 
   const monthlyWeeksMap: Record<string, { start: Date; end: Date; index: number }[]> = {};
@@ -119,53 +136,38 @@ export const generateMonthlySheets = async (
     monthlyWeeksMap[monthName].push({ ...w, index: i });
   });
 
-const isFullHolidayWeek = (week: { start: Date }) => {
-  const days = Array.from({ length: 5 }, (_, i) => {
-    const d = new Date(week.start.getTime() + i * 86400000);
-    return d.toLocaleDateString('sv-SE');
-  });
-  return days.every(dateStr => holidayDates.has(dateStr));
-};
-
-
   for (const [monthName, weekGroup] of Object.entries(monthlyWeeksMap)) {
-    const weekLabels = weekGroup.map((_, i) => `שבוע ${i + 1}`);
-    const startDates = weekGroup.map(w => w.start.toLocaleDateString('he-IL'));
-    const endDates = weekGroup.map(w => w.end.toLocaleDateString('he-IL'));
+    const headers = ['סמל', 'שם', 'מין', 'סוג', ...weekGroup.map((_, i) => `שבוע ${i + 1}`), 'ניצול', 'צפי', 'פער'];
+    const startsRow = ['', '', '', '', ...weekGroup.map(w => w.start.toLocaleDateString('he-IL')), '', '', ''];
+    const endsRow = ['', '', '', '', ...weekGroup.map(w => w.end.toLocaleDateString('he-IL')), '', '', ''];
 
-    const headers = ['סמל', 'שם', ...weekLabels, 'סה"כ'];
-    const startsRow = ['', '', ...startDates, ''];
-    const endsRow = ['', '', ...endDates, ''];
+    const rows = allClasses.map(cls => {
+      const classData = reportData[cls.uniqueSymbol];
+      const row = [cls.uniqueSymbol, cls.name, cls.gender, cls.type];
+      let total = 0;
 
-const rows = allClasses.map(cls => {
-  const classData = reportData[cls.uniqueSymbol];
-  let total = 0;
-  const row = [cls.uniqueSymbol, cls.name];
+      weekGroup.forEach(w => {
+        const isHolidayWeek = isFullHolidayWeek(w);
+        if (isHolidayWeek) {
+          row.push('ללא צהרון');
+        } else {
+          const ops = classData?.weeklyOperators[w.index] || [];
+          row.push(ops.join(', '));
+          total += ops.length;
+        }
+      });
 
-  weekGroup.forEach(w => {
-    const isHolidayWeek = isFullHolidayWeek(w);
-    if (isHolidayWeek) {
-      row.push('ללא צהרון');
-    } else {
-      const ops = classData?.weeklyOperators[w.index] || [];
-      row.push(ops.join(', '));
-      total += ops.length;
-    }
-  });
+      const forecast = weekGroup.filter(w => !isFullHolidayWeek(w)).length;
+      const diff = forecast - total;
 
-  row.push(`${total}`);
-  return row;
-});
-
-
-    const holidayCols: number[] = [];
-    weekGroup.forEach((w, idx) => {
-      if (isFullHolidayWeek(w)) holidayCols.push(idx);
+      row.push(`${total}`);    // ניצול
+      row.push(`${forecast}`); // צפי
+      row.push(`${diff}`);     // פער
+      return row;
     });
 
-    const footerRow = ['', '', ...weekGroup.map((_, i) => holidayCols.includes(i) ? 'ללא צהרון' : ''), ''];
+    const footerRow = ['', '', '', '', ...weekGroup.map(w => isFullHolidayWeek(w) ? 'ללא צהרון' : ''), '', '', ''];
     const values = [headers, startsRow, endsRow, ...rows, footerRow];
-    
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,
