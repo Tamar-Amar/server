@@ -94,22 +94,22 @@ export const generateAttendancePdfBuffer = async (
   doc.fontSize(12)
     .text(`שם המפעיל: ${operator.firstName} ${operator.lastName}`, { align: "right", features: ["rtla"] });
 
-  const startY = 112;
-  let y = startY + 22;
+  const startFromTop = 112;
+  let y = startFromTop + 22;
   const rowHeight = 25;
 
   doc.fontSize(10)
-    .text("תאריך לועזי", 490, startY, { features: ["rtla"], underline: true })
-    .text("יום בשבוע", 404, startY, { features: ["rtla"], underline: true })
-    .text("נוכחות - סמלים", 290, startY, { features: ["rtla"], underline: true })
-    .text("האם בוצע / הערות", 130, startY, { features: ["rtla"], underline: true });
+    .text("תאריך לועזי", 490, startFromTop, { features: ["rtla"], underline: true })
+    .text("יום בשבוע", 404, startFromTop, { features: ["rtla"], underline: true })
+    .text("נוכחות - סמלים", 290, startFromTop, { features: ["rtla"], underline: true })
+    .text("האם בוצע / הערות", 130, startFromTop, { features: ["rtla"], underline: true });
 
   reportData.forEach((row, index) => {
     const isThursday = row.dayOfWeekHebrew === "חמישי";
     doc.fontSize(10)
       .text(row.gregorianDate, 480, y, { width: 60, align: "right", features: ["rtla"] })
       .text(row.dayOfWeekHebrew, 375, y, { width: 60, align: "right" })
-      .text(row.attendanceText, 215, y, { width: 150, align: "right" });
+      .text(row.attendanceText, 215, y, { width: 170, align: "right" });
     doc.moveTo(50, y + rowHeight - 5).lineTo(550, y + rowHeight - 5).lineWidth(0.5).strokeColor("#CCCCCC").stroke();
     if (isThursday && index !== reportData.length - 1) {
       doc.moveTo(50, y + rowHeight - 5).lineTo(550, y + rowHeight - 5).lineWidth(1.2).strokeColor("#000000").stroke();
@@ -194,15 +194,15 @@ export const generateAttendancePdf = (month: string, res: Response) => {
     .moveDown(0.5)
     .text("תעודת זהות: ____________________", { align: "right", features: ["rtla"] });
 
-  const startY = 135;
+  const startFromTop = 135;
 
   doc
     .fontSize(10)
-    .text("תאריך לועזי", 490, startY, { features: ["rtla"], underline: true })
-    .text("יום בשבוע", 400, startY, { features: ["rtla"], underline: true })
-    .text("נוכחות- סמלים", 295, startY, { features: ["rtla"], underline: true });
+    .text("תאריך לועזי", 490, startFromTop, { features: ["rtla"], underline: true })
+    .text("יום בשבוע", 400, startFromTop, { features: ["rtla"], underline: true })
+    .text("נוכחות- סמלים", 295, startFromTop, { features: ["rtla"], underline: true });
 
-  let y = startY + 22;
+  let y = startFromTop + 22;
   const rowHeight = 25;
 
   reportData.forEach((row, index) => {
@@ -309,14 +309,14 @@ export const generateAttendancePdfByOp = (
     .moveDown(0.5)
     .text(`תעודת זהות: ${operator.id}`, { align: "right", features: ["rtla"] });
 
-  const startY = 135;
+  const startFromTop = 135;
   doc.fontSize(10)
-    .text("תאריך לועזי", 490, startY, { features: ["rtla"], underline: true })
-    .text("יום בשבוע", 400, startY, { features: ["rtla"], underline: true })
-    .text("נוכחות - סמלים", 290, startY, { features: ["rtla"], underline: true })
-    .text("האם בוצע / הערות", 130, startY, { features: ["rtla"], underline: true });
+    .text("תאריך לועזי", 490, startFromTop, { features: ["rtla"], underline: true })
+    .text("יום בשבוע", 400, startFromTop, { features: ["rtla"], underline: true })
+    .text("נוכחות - סמלים", 290, startFromTop, { features: ["rtla"], underline: true })
+    .text("האם בוצע / הערות", 130, startFromTop, { features: ["rtla"], underline: true });
 
-  let y = startY + 22;
+  let y = startFromTop + 22;
   const rowHeight = 25;
 
   reportData.forEach((row, index) => {

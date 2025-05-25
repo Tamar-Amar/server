@@ -2,13 +2,17 @@ import { Request, Response } from 'express';
 import Document from '../models/Document';
 
 interface MulterRequest extends Request {
-  file: Express.Multer.File;
+  file?: Express.Multer.File;
 }
+
+
 
 export const uploadDocument = async (req: MulterRequest, res: Response): Promise<void> => {
   try {
     const { operatorId, tag } = req.body;
+
     const file = req.file;
+
 
     if (!file || !operatorId || !tag) {
       res.status(400).json({ error: 'Missing fields' });
@@ -18,11 +22,12 @@ export const uploadDocument = async (req: MulterRequest, res: Response): Promise
     const newDocument = new Document({
       operatorId,
       tag,
-      name: tag + ' - ' + new Date().toLocaleDateString(),
+      name: `${tag} - ${new Date().toLocaleDateString()}`,
       originalName: file.originalname,
       fileType: file.mimetype,
       size: file.size,
-      url: file.path,
+      url: (file as any).path,
+      uploadedAt: new Date()
     });
 
     await newDocument.save();
@@ -31,6 +36,9 @@ export const uploadDocument = async (req: MulterRequest, res: Response): Promise
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+
+
 
 
 export const getDocumentsByOperator = async (req: Request, res: Response): Promise<void> => {

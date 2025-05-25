@@ -18,6 +18,7 @@
     "@types/jsonwebtoken": "^9.0.8",
     "@types/jwt-decode": "^2.2.1",
     "@types/mongoose": "^5.11.96",
+    "@types/multer": "^1.4.12",
     "@types/node": "^22.10.6",
     "@types/nodemailer": "^6.4.17",
     "@types/pdfkit": "^0.13.8",
@@ -27,6 +28,7 @@
   },
   "dependencies": {
     "@mui/x-date-pickers": "^7.24.1",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
@@ -40,6 +42,8 @@
     "jwt-decode": "^4.0.0",
     "luxon": "^3.6.1",
     "mongoose": "^8.9.5",
+    "multer": "^2.0.0",
+    "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^6.10.0",
     "pdfkit": "^0.16.0",
     "stream": "^0.0.3"

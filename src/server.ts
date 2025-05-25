@@ -15,6 +15,7 @@ import { generateAttendancePdf} from './utils/generatePdf';
 import contactRoutes from './routes/contactRoutes';
 import pdfRoutes from './routes/pdfRoutes';
 import emailRoutes from './routes/emailRoutes';
+import documentRoutes from './routes/documentRoutes';
 
 
 dotenv.config();
@@ -46,6 +47,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/generate-pdf-by-op', pdfRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/documents', documentRoutes);
 
 const path = require('path');
 app.post("/api/generate-pdf", (req, res) => {
