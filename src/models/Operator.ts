@@ -60,7 +60,16 @@ const OperatorSchema: Schema = new Schema({
   gender: { type: String, enum: ['בנים', 'בנות', 'גם וגם'], required: true, default: 'גם וגם' },
   educationType: { type: String, enum: ['רגיל', 'מיוחד', 'גם וגם'], required: true, default: 'גם וגם' }, 
   isActive:{type: Boolean, default: true},
-  weeklySchedule: { type: [WeeklyScheduleSchema], default: [] } 
+  weeklySchedule: { 
+    type: [WeeklyScheduleSchema], 
+    default: [
+      { day: 'ראשון', classes: [] },
+      { day: 'שני', classes: [] },
+      { day: 'שלישי', classes: [] },
+      { day: 'רביעי', classes: [] },
+      { day: 'חמישי', classes: [] }
+    ]
+  } 
 });
 
 export default mongoose.model<OperatorDocument>('Operator', OperatorSchema, 'operators-collections');
