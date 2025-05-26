@@ -1,8 +1,7 @@
-
 import mongoose, { Schema, Document as MongooseDocument, Types } from 'mongoose';
 
 export interface Document extends MongooseDocument {
-  operatorId: Types.ObjectId;
+  operatorId: string | Types.ObjectId;
   tag: string;
   name: string;
   originalName: string;
@@ -10,10 +9,11 @@ export interface Document extends MongooseDocument {
   size: number;
   url: string;
   uploadedAt: Date;
+  isTemporary: boolean;
 }
 
 const DocumentSchema = new Schema<Document>({
-  operatorId: { type: Schema.Types.ObjectId, ref: 'Operator', required: true },
+  operatorId: { type: String, required: true },
   tag: { type: String, required: true },
   name: { type: String, required: true },
   originalName: { type: String, required: true },
@@ -21,6 +21,7 @@ const DocumentSchema = new Schema<Document>({
   size: { type: Number, required: true },
   url: { type: String, required: true },
   uploadedAt: { type: Date, default: Date.now },
+  isTemporary: { type: Boolean, default: false }
 });
 
 export default mongoose.model<Document>('Document', DocumentSchema, 'documents-collections');

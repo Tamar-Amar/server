@@ -20,7 +20,8 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       businessDetails, 
       bankDetails, 
       gender, 
-      educationType 
+      educationType,
+      regularClasses 
     } = req.body;
 
     if (!firstName || !phone || !description || !paymentMethod ||  !id || !password || !gender || !educationType) {
@@ -55,11 +56,17 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       signDate: new Date(),
       gender,
       educationType,
+      regularClasses: regularClasses || [],
     });
 
-    await newOperator.save();
-    res.status(201).json(newOperator);
+    const savedOperator = await newOperator.save();
+
+    res.status(201).json({
+      ...savedOperator.toObject(),
+      _id: savedOperator._id
+    });
   } catch (err) {
+    console.error('Error adding operator:', err);
     res.status(400).json({ error: (err as Error).message });
   }
 };
