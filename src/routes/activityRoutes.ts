@@ -47,14 +47,6 @@ router.post('/export-to-sheets', async (req, res) => {
     let current = new Date('2024-10-27');
     const endDate = new Date('2025-06-30');
 
-    allClasses.forEach(cls => {
-if (String(cls.uniqueSymbol).includes('748020')) {
-  console.log('🔍 FOUND:', cls._id, cls.name, cls.uniqueSymbol);
-}
-
-});
-
-
     while (current <= endDate) {
       const start = new Date(current);
       const end = new Date(current);
