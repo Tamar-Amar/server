@@ -18,22 +18,32 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
     }
 
     const { workerId, documentType, expiryDate } = req.body;
-    const { buffer, originalname, mimetype } = req.file;
+    const { buffer, originalname, mimetype, size } = req.file;
+
+    if (!workerId || !documentType) {
+      res.status(400).json({ error: 'חסרים פרטים חובה' });
+      return;
+    }
 
     const s3Key = await uploadFileToS3(buffer, originalname, mimetype);
 
     const doc = await DocumentModel.create({
-      workerId,
+      operatorId: workerId,
       fileName: originalname,
+      originalName: originalname,
       fileType: mimetype,
+      size: size,
       documentType,
       s3Key,
       expiryDate,
-      uploadedBy: req.user?.id
+      uploadedBy: req.user?.id || 'system',
+      tag: documentType,
+      status: DocumentStatus.PENDING
     });
 
     res.status(201).json(doc);
   } catch (err: unknown) {
+    console.error('Error in uploadDocument:', err);
     const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
     res.status(500).json({ error });
   }

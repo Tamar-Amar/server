@@ -32,7 +32,6 @@ export const addWorker = async (req: Request, res: Response): Promise<void> => {
       // Continue with the response even if Shoveit update fails
     }
 
-    console.log('Worker saved successfully:', savedWorker);
     res.status(201).json(savedWorker);
   } catch (err) {
     console.error('Error adding worker:', err);

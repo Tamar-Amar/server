@@ -9,13 +9,18 @@ import {
 
 const router = express.Router();
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  }
+});
 
 // העלאת מסמך חדש
 router.post('/upload', upload.single('file'), uploadDocument);
 
 // קבלת כל המסמכים של עובד
-router.get('/worker/:workerId', getWorkerDocuments);
+router.get('/:workerId', getWorkerDocuments);
 
 // עדכון סטטוס מסמך
 router.patch('/:documentId/status', updateDocumentStatus);

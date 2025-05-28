@@ -23,7 +23,6 @@ class ShoveitService {
         throw new Error('Shoveit configuration is missing. Please check SHOVEIT_API_URL and SHOVEIT_API_KEY environment variables.');
       }
 
-      console.log(`Updating worker ${worker.id} in Shoveit system...`);
 
       const payload = {
         id: worker.id,
@@ -55,7 +54,6 @@ class ShoveitService {
         }
       );
 
-      console.log(`Successfully updated worker ${worker.id} in Shoveit system`);
       return response.data;
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Unknown error';

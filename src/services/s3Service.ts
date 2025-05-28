@@ -10,7 +10,13 @@ const s3Client = new S3Client({
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+  },
+  requestHandler: {
+    abortSignal: undefined,
+    connectionTimeout: 30000, // 30 seconds
+    socketTimeout: 60000 // 60 seconds
+  },
+  maxAttempts: 3
 });
 
 const BUCKET_NAME = process.env.AWS_BUCKET_NAME || 'your-bucket-name';
@@ -23,16 +29,21 @@ export const uploadFileToS3 = async (
 ): Promise<string> => {
   const key = `${crypto.randomUUID()}-${originalname}`;
 
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-      Body: buffer,
-      ContentType: mimetype
-    })
-  );
+  try {
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: buffer,
+        ContentType: mimetype
+      })
+    );
 
-  return key;
+    return key;
+  } catch (error) {
+    console.error('Error uploading to S3:', error);
+    throw new Error('Failed to upload file to S3');
+  }
 };
 
 // מחיקת קובץ מ-S3
