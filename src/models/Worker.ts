@@ -12,7 +12,10 @@ export interface WorkerDocument extends Document {
   workingSymbols: Types.ObjectId[]; // מערך סמלים בהם העובד עובד - איידי של כיתות
   accountantId?: string; // שם חשב השכר
   tags: Types.ObjectId[]; // מערך תגיות (צהרון, קייטנה, בוקר וכו')
-  documents: Types.ObjectId[]; // מערך מסמכים
+  documents: Array<{
+    documentId: Types.ObjectId;
+    status: 'התקבל' | 'נדחה' | 'אושר' | 'אחר';
+  }>;
   registrationDate: Date; // תאריך רישום למערכת
   paymentMethod: 'חשבונית' | 'תלוש'; // אופן תשלום
   
@@ -29,6 +32,11 @@ export interface WorkerDocument extends Document {
   notes?: string;
 }
 
+const WorkerDocumentSchema = new Schema({
+  documentId: { type: Schema.Types.ObjectId, ref: 'Document', required: true },
+  status: { type: String, enum: ['התקבל', 'נדחה', 'אושר', 'אחר'], default: 'התקבל' }
+});
+
 const WorkerSchema: Schema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
@@ -41,7 +49,7 @@ const WorkerSchema: Schema = new Schema({
   workingSymbols: [{ type: Schema.Types.ObjectId, ref: 'Class' }],
   accountantId: { type: String },
   tags: [{ type: Schema.Types.ObjectId, ref: 'Tag' }],
-  documents: [{ type: Schema.Types.ObjectId, ref: 'Document' }],
+  documents: [WorkerDocumentSchema],
   registrationDate: { type: Date, default: Date.now },
   paymentMethod: { type: String, enum: ['חשבונית', 'תלוש'], required: true },
   
@@ -66,5 +74,6 @@ WorkerSchema.index({ id: 1 });
 WorkerSchema.index({ firstName: 1, lastName: 1 });
 WorkerSchema.index({ workingSymbols: 1 });
 WorkerSchema.index({ tags: 1 });
+WorkerSchema.index({ 'documents.documentId': 1 });
 
 export default mongoose.model<WorkerDocument>('Worker', WorkerSchema, 'workers-collections'); 

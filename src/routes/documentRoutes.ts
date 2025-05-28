@@ -1,14 +1,26 @@
 import express from 'express';
 import multer from 'multer';
-import { storage } from '../utils/cloudinary';
-import { uploadDocument, getDocumentsByOperator, updateOperatorDocuments } from '../controllers/documentController';
+import {
+  uploadDocument,
+  getWorkerDocuments,
+  updateDocumentStatus,
+  deleteDocument
+} from '../controllers/documentController';
 
 const router = express.Router();
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+// העלאת מסמך חדש
 router.post('/upload', upload.single('file'), uploadDocument);
-router.get('/:operatorId', getDocumentsByOperator);
-router.put('/update-operator', updateOperatorDocuments);
+
+// קבלת כל המסמכים של עובד
+router.get('/worker/:workerId', getWorkerDocuments);
+
+// עדכון סטטוס מסמך
+router.patch('/:documentId/status', updateDocumentStatus);
+
+// מחיקת מסמך
+router.delete('/:documentId', deleteDocument);
 
 export default router;
