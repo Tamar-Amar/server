@@ -1,6 +1,7 @@
 import { Request, Response, RequestHandler } from 'express';
 import DocumentModel, { DocumentStatus, DocumentType } from '../models/Document';
 import { uploadFileToS3, deleteFileFromS3, getSignedUrl } from '../services/s3Service';
+import { Types } from 'mongoose';
 
 interface RequestWithUser extends Request {
   user?: { id: string };
@@ -8,6 +9,22 @@ interface RequestWithUser extends Request {
 }
 
 type ExpressResponse = Response<any, Record<string, any>>;
+
+const generateFileName = (workerId: string, documentType: string, originalName: string): string => {
+  const date = new Date().toISOString().split('T')[0];
+  const extension = originalName.split('.').pop();
+  const typeMap: { [key: string]: string } = {
+    'תעודת זהות': 'id',
+    'קורות חיים': 'cv',
+    'תעודות השכלה': 'education',
+    'תעודת יושר': 'criminal',
+    'פרטי בנק': 'bank',
+    'אחר': 'other'
+  };
+  
+  const fileType = typeMap[documentType] || 'other';
+  return `${workerId}-${fileType}-${date}.${extension}`;
+};
 
 // העלאת מסמך חדש
 export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, next) => {
@@ -25,23 +42,41 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
       return;
     }
 
-    const s3Key = await uploadFileToS3(buffer, originalname, mimetype);
+    try {
+      // המרת workerId ל-ObjectId
+      const operatorId = new Types.ObjectId(workerId);
 
-    const doc = await DocumentModel.create({
-      operatorId: workerId,
-      fileName: originalname,
-      originalName: originalname,
-      fileType: mimetype,
-      size: size,
-      documentType,
-      s3Key,
-      expiryDate,
-      uploadedBy: req.user?.id || 'system',
-      tag: documentType,
-      status: DocumentStatus.PENDING
-    });
+      // יצירת שם קובץ חדש
+      const newFileName = generateFileName(workerId, documentType, originalname);
+      
+      const s3Key = await uploadFileToS3(buffer, newFileName, mimetype);
 
-    res.status(201).json(doc);
+      const doc = await DocumentModel.create({
+        operatorId,
+        fileName: newFileName,
+        originalName: originalname,
+        fileType: mimetype,
+        size: size,
+        documentType,
+        s3Key,
+        expiryDate,
+        uploadedBy: req.user?.id || 'system',
+        tag: documentType,
+        status: DocumentStatus.PENDING
+      });
+
+      // הוספת URL חתום למסמך
+      const url = await getSignedUrl(s3Key);
+      const docWithUrl = { ...doc.toObject(), url };
+
+      res.status(201).json(docWithUrl);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'CastError') {
+        res.status(400).json({ error: 'מזהה עובד לא תקין' });
+        return;
+      }
+      throw error;
+    }
   } catch (err: unknown) {
     console.error('Error in uploadDocument:', err);
     const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
@@ -53,15 +88,28 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
 export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
   try {
     const { workerId } = req.params;
-    const documents = await DocumentModel.find({ workerId });
     
-    // הוספת URL חתום לכל מסמך
-    const docsWithUrls = await Promise.all(documents.map(async (doc) => {
-      const url = await getSignedUrl(doc.s3Key as string);
-      return { ...doc.toObject(), url };
-    }));
+    try {
+      // המרת workerId ל-ObjectId
+      const operatorId = new Types.ObjectId(workerId);
+      console.log("operatorId", operatorId);
+      const documents = await DocumentModel.find({ operatorId });
+      console.log("documents", documents);
+      
+      // הוספת URL חתום לכל מסמך
+      const docsWithUrls = await Promise.all(documents.map(async (doc) => {
+        const url = await getSignedUrl(doc.s3Key as string);
+        return { ...doc.toObject(), url };
+      }));
 
-    res.json(docsWithUrls);
+      res.json(docsWithUrls);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'CastError') {
+        res.status(400).json({ error: 'מזהה עובד לא תקין' });
+        return;
+      }
+      throw error;
+    }
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
     res.status(500).json({ error });

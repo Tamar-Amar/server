@@ -17,7 +17,7 @@ export enum DocumentType {
 }
 
 export interface Document extends MongooseDocument {
-  operatorId: string | Types.ObjectId;
+  operatorId: Types.ObjectId;
   tag: string;
   fileName: String,
   originalName: string;
@@ -35,7 +35,7 @@ export interface Document extends MongooseDocument {
 }
 
 const DocumentSchema = new Schema<Document>({
-  operatorId: { type: String, required: true },
+  operatorId: { type: Schema.Types.ObjectId, required: true },
   tag: { type: String, required: true },
   fileName: { type: String, required: true },
   originalName: { type: String, required: true },
@@ -51,5 +51,8 @@ const DocumentSchema = new Schema<Document>({
   expiryDate: Date,
   comments: String
 });
+
+// אינדקס על operatorId לחיפוש מהיר
+DocumentSchema.index({ operatorId: 1 });
 
 export default mongoose.model<Document>('Document', DocumentSchema, 'documents-collections');

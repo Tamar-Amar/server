@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import WorkerTag from '../models/WorkerTag';
+import Worker from '../models/Worker';
 
 export const addWorkerTag = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -24,20 +25,20 @@ export const getWorkerTags = async (req: Request, res: Response): Promise<void> 
 export const updateWorkerTag = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const { tagIds } = req.body;
     
-    const updatedTag = await WorkerTag.findByIdAndUpdate(
+    const updatedWorker = await Worker.findByIdAndUpdate(
       id,
-      { name },
+      { tags: tagIds },
       { new: true, runValidators: true }
     );
 
-    if (!updatedTag) {
-      res.status(404).json({ error: 'Tag not found' });
+    if (!updatedWorker) {
+      res.status(404).json({ error: 'Worker not found' });
       return;
     }
 
-    res.json(updatedTag);
+    res.json(updatedWorker);
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
@@ -62,3 +63,17 @@ export const deleteWorkerTag = async (req: Request, res: Response): Promise<void
     res.status(500).json({ error: (err as Error).message });
   }
 }; 
+
+export const getWorkerTagsByWorkerId = async (req: Request, res: Response): Promise<void> => {
+  console.log("getWorkerTagsByWorkerId");
+  try {
+    const { id } = req.params;
+    console.log("id", id);
+    const worker = await Worker.findById(id);
+    console.log("worker", worker);
+    console.log("worker.tags", worker?.tags);
+    res.json(worker?.tags);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};

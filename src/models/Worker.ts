@@ -1,5 +1,10 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
+interface WeeklySchedule {
+  day: 'ראשון' | 'שני' | 'שלישי' | 'רביעי' | 'חמישי';
+  classes: Types.ObjectId[];
+}
+
 export interface WorkerDocument extends Document {
   firstName: string;
   lastName: string;
@@ -17,7 +22,12 @@ export interface WorkerDocument extends Document {
     status: 'התקבל' | 'נדחה' | 'אושר' | 'אחר';
   }>;
   registrationDate: Date; // תאריך רישום למערכת
+  lastUpdateDate: Date;
+  status: string;
+  jobType: string;
+  jobTitle: string;
   paymentMethod: 'חשבונית' | 'תלוש'; // אופן תשלום
+  weeklySchedule: WeeklySchedule[];
   
   // שדות נוספים שימושיים
   phone: string;
@@ -37,6 +47,11 @@ const WorkerDocumentSchema = new Schema({
   status: { type: String, enum: ['התקבל', 'נדחה', 'אושר', 'אחר'], default: 'התקבל' }
 });
 
+const WeeklyScheduleSchema = new Schema({
+  day: { type: String, enum: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'], required: true },
+  classes: [{ type: Schema.Types.ObjectId, ref: 'Class' }]
+});
+
 const WorkerSchema: Schema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
@@ -51,7 +66,21 @@ const WorkerSchema: Schema = new Schema({
   tags: [{ type: Schema.Types.ObjectId, ref: 'Tag' }],
   documents: [WorkerDocumentSchema],
   registrationDate: { type: Date, default: Date.now },
+  lastUpdateDate: { type: Date, default: Date.now },
+  status: { type: String, default: 'לא נבחר' },
+  jobType: { type: String, default: 'לא נבחר' },
+  jobTitle: { type: String, default: 'לא נבחר' },
   paymentMethod: { type: String, enum: ['חשבונית', 'תלוש'], required: true },
+  weeklySchedule: { 
+    type: [WeeklyScheduleSchema], 
+    default: [
+      { day: 'ראשון', classes: [] },
+      { day: 'שני', classes: [] },
+      { day: 'שלישי', classes: [] },
+      { day: 'רביעי', classes: [] },
+      { day: 'חמישי', classes: [] }
+    ]
+  },
   
   // שדות נוספים
   phone: { type: String, required: true },
