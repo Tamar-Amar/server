@@ -19,7 +19,7 @@ import pdfRoutes from './routes/pdfRoutes';
 import emailRoutes from './routes/emailRoutes';
 import documentRoutes from './routes/documentRoutes';
 import workerRoutes from './routes/workerRoutes';
-import workerTagRoutes from './routes/workerTagRoutes';
+import tagRoutes from './routes/tagRoutes';
 
 
 dotenv.config();
@@ -46,7 +46,7 @@ app.use('/api/stores', storeRoutes);
 app.use('/api/activities', activityRoutes);
 app.use("/api/operators", operatorRoutes);
 app.use("/api/workers", workerRoutes);
-app.use("/api/worker-tags", workerTagRoutes);
+app.use("/api/tags", tagRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/auth', authRoutes);

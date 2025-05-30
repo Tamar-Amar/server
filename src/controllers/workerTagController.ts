@@ -22,28 +22,16 @@ export const getWorkerTags = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const updateWorkerTag = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { tagIds } = req.body;
-    
-    const updatedWorker = await Worker.findByIdAndUpdate(
-      id,
-      { tags: tagIds },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedWorker) {
-      res.status(404).json({ error: 'Worker not found' });
-      return;
+export const updateTag = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        const tag = await WorkerTag.findByIdAndUpdate(id, { name }, { new: true });
+        res.json(tag);
+    } catch (err) {
+        res.status(500).json({ error: (err as Error).message });
     }
-
-    res.json(updatedWorker);
-  } catch (err) {
-    res.status(400).json({ error: (err as Error).message });
-  }
 };
-
 export const deleteWorkerTag = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
