@@ -109,7 +109,7 @@ export const generateAttendancePdfBuffer = async (
     doc.fontSize(10)
       .text(row.gregorianDate, 480, y, { width: 60, align: "right", features: ["rtla"] })
       .text(row.dayOfWeekHebrew, 375, y, { width: 60, align: "right" })
-      .text(row.attendanceText, 215, y, { width: 170, align: "right" });
+      .text(row.attendanceText, 135, y, { width: 230, align: "right" });
     doc.moveTo(50, y + rowHeight - 5).lineTo(550, y + rowHeight - 5).lineWidth(0.5).strokeColor("#CCCCCC").stroke();
     if (isThursday && index !== reportData.length - 1) {
       doc.moveTo(50, y + rowHeight - 5).lineTo(550, y + rowHeight - 5).lineWidth(1.2).strokeColor("#000000").stroke();
