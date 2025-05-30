@@ -20,8 +20,8 @@ export interface Document extends MongooseDocument {
   operatorId: Types.ObjectId;
   tag: string;
   fileName: String,
-  originalName: string;
   fileType: string;
+  url: String;
   size: number;
   s3Key: String,
   uploadedAt: Date;
@@ -38,10 +38,10 @@ const DocumentSchema = new Schema<Document>({
   operatorId: { type: Schema.Types.ObjectId, required: true },
   tag: { type: String, required: true },
   fileName: { type: String, required: true },
-  originalName: { type: String, required: true },
   fileType: { type: String, required: true },
   size: { type: Number, required: true },
   s3Key: { type: String, required: true },
+  url:{ type: String, required: true },
   uploadedAt: { type: Date, default: Date.now },
   uploadedBy: { type: String, required: true },
   isTemporary: { type: Boolean, default: false },

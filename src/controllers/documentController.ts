@@ -45,16 +45,17 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
     try {
       // המרת workerId ל-ObjectId
       const operatorId = new Types.ObjectId(workerId);
+      console.log("operatorId", operatorId);
 
       // יצירת שם קובץ חדש
       const newFileName = generateFileName(workerId, documentType, originalname);
+      console.log("newFileName", newFileName);
       
       const s3Key = await uploadFileToS3(buffer, newFileName, mimetype);
 
       const doc = await DocumentModel.create({
         operatorId,
         fileName: newFileName,
-        originalName: originalname,
         fileType: mimetype,
         size: size,
         documentType,
@@ -92,9 +93,7 @@ export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
     try {
       // המרת workerId ל-ObjectId
       const operatorId = new Types.ObjectId(workerId);
-      console.log("operatorId", operatorId);
       const documents = await DocumentModel.find({ operatorId });
-      console.log("documents", documents);
       
       // הוספת URL חתום לכל מסמך
       const docsWithUrls = await Promise.all(documents.map(async (doc) => {
@@ -120,11 +119,13 @@ export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
 export const updateDocumentStatus: RequestHandler = async (req, res, next) => {
   try {
     const { documentId } = req.params;
-    const { status, comments } = req.body;
+    console.log("documentId", documentId);
+    const { status} = req.body;
+    console.log("status", status);
 
     const doc = await DocumentModel.findByIdAndUpdate(
       documentId,
-      { status, comments },
+      { status },
       { new: true }
     );
 
@@ -163,3 +164,23 @@ export const deleteDocument: RequestHandler = async (req, res, next) => {
     res.status(500).json({ error });
   }
 };
+
+// קבלת כל המסמכים
+export const getAllDocuments: RequestHandler = async (req, res, next) => {
+  try {
+    const documents = await DocumentModel.find();
+
+    const docsWithUrls = await Promise.all(documents.map(async (doc) => {
+      const url = await getSignedUrl(doc.s3Key as string);
+      return { ...doc.toObject(), url };
+    }));
+
+    res.json(docsWithUrls);
+
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
+  }
+};
+
+

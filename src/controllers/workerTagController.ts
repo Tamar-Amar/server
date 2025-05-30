@@ -65,13 +65,9 @@ export const deleteWorkerTag = async (req: Request, res: Response): Promise<void
 }; 
 
 export const getWorkerTagsByWorkerId = async (req: Request, res: Response): Promise<void> => {
-  console.log("getWorkerTagsByWorkerId");
   try {
     const { id } = req.params;
-    console.log("id", id);
     const worker = await Worker.findById(id);
-    console.log("worker", worker);
-    console.log("worker.tags", worker?.tags);
     res.json(worker?.tags);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

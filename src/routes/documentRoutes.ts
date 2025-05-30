@@ -4,7 +4,8 @@ import {
   uploadDocument,
   getWorkerDocuments,
   updateDocumentStatus,
-  deleteDocument
+  deleteDocument,
+  getAllDocuments
 } from '../controllers/documentController';
 
 const router = express.Router();
@@ -23,9 +24,12 @@ router.post('/upload', upload.single('file'), uploadDocument);
 router.get('/:workerId', getWorkerDocuments);
 
 // עדכון סטטוס מסמך
-router.patch('/:documentId/status', updateDocumentStatus);
+router.patch('/status/:documentId', updateDocumentStatus);
 
 // מחיקת מסמך
 router.delete('/:documentId', deleteDocument);
+
+// קבלת כל המסמכים
+router.get('/', getAllDocuments);
 
 export default router;
