@@ -1,9 +1,27 @@
 import { Request, Response } from 'express';
 import Worker from '../models/Worker';
 import Class from '../models/Class';
-import Tag from '../models/Tag';
 import mongoose from 'mongoose';
 import ShoveitService from '../services/ShoveitService';
+import { Document } from '../models/Document';
+import { Types } from 'mongoose';
+
+interface PopulatedWorker {
+
+  _id: Types.ObjectId;
+  workingSymbols: { _id: Types.ObjectId; name: string; }[];
+  tags: { _id: Types.ObjectId; name: string; }[]; 
+  documents: { _id: Types.ObjectId; fileName: string; fileType: string; url: string; status: string; }[];
+  birthDate: Date;
+  registrationDate: Date;
+  bankDetails?: {
+    bankName: string;
+    branchNumber: string;
+    accountNumber: string;
+    accountOwner: string;
+  };
+  [key: string]: any;
+}
 
 export const addWorker = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -60,26 +78,45 @@ export const getWorkerById = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     const worker = await Worker.findById(id)
-      .populate('workingSymbols')
-      .populate('tags')
-      .populate('documents')
+      .populate({
+        path: 'workingSymbols',
+      })
+      .populate({
+        path: 'tags',
+      })
+      .populate({
+        path: 'documents',
+      })
       .lean()
-      .exec();
-
+      .exec() as unknown as PopulatedWorker;
+    console.log("Worker in getWorkerById controller server:", worker);
     if (!worker) {
       res.status(404).json({ error: "העובד לא נמצא" });
       return;
     }
 
+    console.log("Worker in getWorkerById controller server:", worker);
     // Transform dates to ISO string format for proper JSON serialization
     const formattedWorker = {
       ...worker,
+      _id: worker._id.toString(),
       birthDate: worker.birthDate ? new Date(worker.birthDate).toISOString() : null,
       registrationDate: worker.registrationDate ? new Date(worker.registrationDate).toISOString() : null,
-      // Add any additional field transformations here
-      workingSymbols: worker.workingSymbols || [],
-      tags: worker.tags || [],
-      documents: worker.documents || [],
+      workingSymbols: (worker.workingSymbols || []).map(symbol => ({
+        _id: symbol._id.toString(),
+        name: symbol.name
+      })),
+      tags: (worker.tags || []).map(tag => ({
+        _id: tag._id.toString(),
+        name: tag.name
+      })),
+      documents: (worker.documents || []).map(doc => ({
+        _id: doc._id.toString(),
+        fileName: doc.fileName,
+        fileType: doc.fileType,
+        url: doc.url,
+        status: doc.status
+      })),
       bankDetails: worker.bankDetails || {
         bankName: '',
         branchNumber: '',
@@ -88,6 +125,7 @@ export const getWorkerById = async (req: Request, res: Response): Promise<void> 
       }
     };
 
+    console.log('Worker with documents:', formattedWorker);
     res.status(200).json(formattedWorker);
   } catch (err) {
     console.error('Error fetching worker by ID:', err);
