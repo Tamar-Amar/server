@@ -221,4 +221,30 @@ export const deleteWorker = async (req: Request, res: Response): Promise<void> =
     console.error('Error deleting worker:', err);
     res.status(500).json({ error: (err as Error).message });
   }
+};
+
+export const getWorkerProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'לא נמצא משתמש מחובר' });
+      return;
+    }
+
+    const workerId = req.user.id;
+
+    const worker = await Worker.findById(workerId)
+      .populate('documents.documentId')
+      .lean()
+      .exec();
+
+    if (!worker) {
+      res.status(404).json({ message: 'עובד לא נמצא' });
+      return;
+    }
+
+    res.json(worker);
+  } catch (error) {
+    console.error('Error fetching worker profile:', error);
+    res.status(500).json({ message: 'שגיאת שרת' });
+  }
 }; 

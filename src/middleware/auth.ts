@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
 declare global {
   namespace Express {
@@ -18,8 +18,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    res.status(401).json({ message: 'לא נמצא טוקן הזדהות' });
-    return;
+    return res.status(401).json({ message: 'לא נמצא טוקן הזדהות' });
   }
 
   try {
@@ -32,7 +31,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     req.user = user;
     next();
   } catch (error) {
-    res.status(403).json({ message: 'טוקן לא תקין' });
-    return;
+    return res.status(403).json({ message: 'טוקן לא תקין' });
   }
-};
+}; 

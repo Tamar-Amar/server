@@ -13,8 +13,15 @@ export enum DocumentType {
   EDUCATION = 'תעודות השכלה',
   CRIMINAL_RECORD = 'תעודת יושר',
   BANK_DETAILS = 'פרטי בנק',
+  POLICE_APPROVAL = 'אישור משטרה',
+  TEACHING_CERTIFICATE = 'תעודת הוראה',
   OTHER = 'אחר'
 }
+
+export const REQUIRED_DOCUMENTS = [
+  DocumentType.POLICE_APPROVAL,
+  DocumentType.TEACHING_CERTIFICATE
+];
 
 export interface Document extends MongooseDocument {
   operatorId: Types.ObjectId;

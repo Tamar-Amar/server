@@ -4,7 +4,7 @@ import { uploadFileToS3, deleteFileFromS3, getSignedUrl } from '../services/s3Se
 import { Types } from 'mongoose';
 
 interface RequestWithUser extends Request {
-  user?: { id: string };
+  user?: { id: string; role: string; idNumber: string };
   file?: Express.Multer.File;
 }
 
@@ -19,6 +19,8 @@ const generateFileName = (workerId: string, documentType: string, originalName: 
     'תעודות השכלה': 'education',
     'תעודת יושר': 'criminal',
     'פרטי בנק': 'bank',
+    'אישור משטרה': 'police',
+    'תעודת הוראה': 'teaching',
     'אחר': 'other'
   };
   
@@ -52,6 +54,7 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
       console.log("newFileName", newFileName);
       
       const s3Key = await uploadFileToS3(buffer, newFileName, mimetype);
+      const url = await getSignedUrl(s3Key);
 
       const doc = await DocumentModel.create({
         operatorId,
@@ -60,17 +63,14 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
         size: size,
         documentType,
         s3Key,
+        url,
         expiryDate,
         uploadedBy: req.user?.id || 'system',
         tag: documentType,
         status: DocumentStatus.PENDING
       });
 
-      // הוספת URL חתום למסמך
-      const url = await getSignedUrl(s3Key);
-      const docWithUrl = { ...doc.toObject(), url };
-
-      res.status(201).json(docWithUrl);
+      res.status(201).json(doc);
     } catch (error) {
       if (error instanceof Error && error.name === 'CastError') {
         res.status(400).json({ error: 'מזהה עובד לא תקין' });
