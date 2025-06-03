@@ -4,7 +4,11 @@ import { uploadFileToS3 } from '../services/s3Service';
 import DocumentModel from '../models/Document';
 
 interface RequestWithUser extends Request {
-  user?: { id: string };
+  user?: { 
+    id: string;
+    role: string;
+    idNumber: string;
+  };
   file?: Express.Multer.File;
 }
 
@@ -25,7 +29,7 @@ export const uploadFile = async (req: RequestWithUser, res: Response) => {
       fileName: originalname,
       fileType: mimetype,
       s3Key,
-      uploadedBy: req.user?.id || null, // או לפי מערכת שלך
+      uploadedBy: req.user?.id || null,
     });
 
     res.status(201).json(doc);
