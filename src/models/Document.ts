@@ -35,7 +35,6 @@ export interface Document extends MongooseDocument {
   uploadedBy: string,
   isTemporary: boolean;
   status: DocumentStatus;
-  documentType: DocumentType;
   uploadDate: Date;
   expiryDate: Date;
   comments: string;
@@ -53,7 +52,7 @@ const DocumentSchema = new Schema<Document>({
   uploadedBy: { type: String, required: true },
   isTemporary: { type: Boolean, default: false },
   status: { type: String, enum: Object.values(DocumentStatus), default: DocumentStatus.PENDING },
-  documentType: { type: String, enum: Object.values(DocumentType), required: true },
+
   uploadDate: { type: Date, default: Date.now },
   expiryDate: Date,
   comments: String

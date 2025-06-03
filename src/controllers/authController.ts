@@ -4,7 +4,6 @@ import Operator from '../models/Operator';
 import Worker from '../models/Worker';
 import nodemailer from 'nodemailer';
 
-// יצירת טרנספורטר למשלוח מיילים
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -13,19 +12,22 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// פונקציה ליצירת קוד אימות
-const generateVerificationCode = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
 
 export const logAuth = async (req: Request, res: Response): Promise<void> => {
   const { id, password } = req.body;
   try {
     const isAdmin = id === process.env.ADMIN_ID && password === process.env.ADMIN_PASSWORD;
+    const isManager = id === process.env.MANAGER_ID && password === process.env.MANAGER_PASSWORD;
 
     if (isAdmin) {
       const adminToken = jwt.sign({ id, role: 'admin' }, process.env.JWT_SECRET as string, { expiresIn: '20d' });
       res.status(200).json({ message: 'כניסה מוצלחת', token: adminToken, role: 'admin' });
+      return;
+    }
+
+    if (isManager) {
+      const managerToken = jwt.sign({ id, role: 'manager' }, process.env.JWT_SECRET as string, { expiresIn: '20d' });
+      res.status(200).json({ message: 'כניסה מוצלחת', token: managerToken, role: 'manager' });
       return;
     }
 
@@ -55,7 +57,9 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: 'שגיאה בשרת' });
   }
 };
-  const workerVerificationCodes: Record<string, { code: string; expiresAt: number }> = {};
+  
+
+const workerVerificationCodes: Record<string, { code: string; expiresAt: number }> = {};
 
 export const workerLogin = async (req: Request, res: Response): Promise<void> => {
   console.log('workerLogin');
@@ -63,7 +67,6 @@ export const workerLogin = async (req: Request, res: Response): Promise<void> =>
     const { idNumber } = req.body;
     console.log('idNumber', idNumber);
     
-    // חיפוש העובד לפי תעודת זהות
     const worker = await Worker.findOne({ id: idNumber });
     console.log('worker', worker);
     
@@ -82,15 +85,12 @@ export const workerLogin = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // יצירת קוד אימות
     const email = worker.email;
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 1000 * 60 * 5;
 
     workerVerificationCodes[idNumber] = { code, expiresAt };
 
-
-    // שליחת המייל
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: worker.email,

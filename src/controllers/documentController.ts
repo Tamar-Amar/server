@@ -8,16 +8,11 @@ interface RequestWithUser extends Request {
   file?: Express.Multer.File;
 }
 
-type ExpressResponse = Response<any, Record<string, any>>;
-
 const generateFileName = (workerId: string, documentType: string, originalName: string): string => {
   const date = new Date().toISOString().split('T')[0];
   const extension = originalName.split('.').pop();
   const typeMap: { [key: string]: string } = {
     'תעודת זהות': 'id',
-    'קורות חיים': 'cv',
-    'תעודות השכלה': 'education',
-    'תעודת יושר': 'criminal',
     'פרטי בנק': 'bank',
     'אישור משטרה': 'police',
     'תעודת הוראה': 'teaching',
@@ -28,7 +23,6 @@ const generateFileName = (workerId: string, documentType: string, originalName: 
   return `${workerId}-${fileType}-${date}.${extension}`;
 };
 
-// העלאת מסמך חדש
 export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, next) => {
   try {
     if (!req.file) {
@@ -45,13 +39,9 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
     }
 
     try {
-      // המרת workerId ל-ObjectId
       const operatorId = new Types.ObjectId(workerId);
-      console.log("operatorId", operatorId);
 
-      // יצירת שם קובץ חדש
       const newFileName = generateFileName(workerId, documentType, originalname);
-      console.log("newFileName", newFileName);
       
       const s3Key = await uploadFileToS3(buffer, newFileName, mimetype);
       const url = await getSignedUrl(s3Key);
@@ -61,13 +51,14 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
         fileName: newFileName,
         fileType: mimetype,
         size: size,
-        documentType,
         s3Key,
         url,
         expiryDate,
         uploadedBy: req.user?.id || 'system',
         tag: documentType,
-        status: DocumentStatus.PENDING
+        status: DocumentStatus.PENDING,
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
 
       res.status(201).json(doc);
@@ -85,17 +76,14 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
   }
 };
 
-// קבלת כל המסמכים של עובד
 export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
   try {
     const { workerId } = req.params;
     
     try {
-      // המרת workerId ל-ObjectId
       const operatorId = new Types.ObjectId(workerId);
       const documents = await DocumentModel.find({ operatorId });
-      
-      // הוספת URL חתום לכל מסמך
+
       const docsWithUrls = await Promise.all(documents.map(async (doc) => {
         const url = await getSignedUrl(doc.s3Key as string);
         return { ...doc.toObject(), url };
@@ -115,7 +103,6 @@ export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
   }
 };
 
-// עדכון סטטוס מסמך
 export const updateDocumentStatus: RequestHandler = async (req, res, next) => {
   try {
     const { documentId } = req.params;
@@ -141,7 +128,6 @@ export const updateDocumentStatus: RequestHandler = async (req, res, next) => {
   }
 };
 
-// מחיקת מסמך
 export const deleteDocument: RequestHandler = async (req, res, next) => {
   try {
     const { documentId } = req.params;
@@ -152,10 +138,8 @@ export const deleteDocument: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    // מחיקה מ-S3
     await deleteFileFromS3(doc.s3Key as string);
     
-    // מחיקה מהדאטהבייס
     await DocumentModel.findByIdAndDelete(doc._id);
 
     res.json({ message: 'מסמך נמחק בהצלחה' });
@@ -165,7 +149,6 @@ export const deleteDocument: RequestHandler = async (req, res, next) => {
   }
 };
 
-// קבלת כל המסמכים
 export const getAllDocuments: RequestHandler = async (req, res, next) => {
   try {
     const documents = await DocumentModel.find();
