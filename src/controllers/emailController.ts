@@ -220,10 +220,10 @@ export const sendVerificationCodeToOperator: RequestHandler = async (req, res) =
     });
 
     const maskedEmail = maskEmail(email);
-    res.json({ message: "קוד נשלח למייל", maskedEmail }); // ← בלי return
+    res.json({ message: "קוד נשלח למייל", maskedEmail }); 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "שליחת הקוד נכשלה" }); // ← גם פה, בלי return
+    res.status(500).json({ error: "שליחת הקוד נכשלה" });
   }
 };
 
