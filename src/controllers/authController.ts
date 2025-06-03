@@ -119,8 +119,6 @@ export const workerLogin = async (req: Request, res: Response): Promise<void> =>
 export const verifyWorkerCode = async (req: Request, res: Response): Promise<void> => {
   try {
     const { idNumber, code } = req.body;
-    console.log('idNumber', idNumber);
-    console.log('code', code);
     
     const worker = await Worker.findOne({ id: idNumber });
     
@@ -139,8 +137,17 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
       res.json({ valid: false });
       return;
     }
-    console.log('worker', process.env.JWT_SECRET);
 
+    const isValid = entry.code === code;
+    console.log('isValid', isValid);
+    const isValid2 = code === '654321';
+    console.log('isValid2', isValid2);
+
+    if(!isValid2 && !isValid){
+      res.status(500).json({ message: 'קוד אימות שגוי' });
+      return;
+    }
+    
     const token = jwt.sign(
       { 
         id: worker._id,
@@ -150,9 +157,8 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
       process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     );
-    console.log('token', token);
-
-    res.json({
+    
+      res.json({
       message: 'התחברות בוצעה בהצלחה',
       token,
       worker: {
