@@ -1,82 +1,169 @@
-import { Request, Response } from 'express';
-import Document from '../models/Document';
+import { Request, Response, RequestHandler } from 'express';
+import DocumentModel, { DocumentStatus, DocumentType } from '../models/Document';
+import { uploadFileToS3, deleteFileFromS3, getSignedUrl } from '../services/s3Service';
+import { Types } from 'mongoose';
 
-interface MulterRequest extends Request {
+interface RequestWithUser extends Request {
+  user?: { id: string; role: string; idNumber: string };
   file?: Express.Multer.File;
 }
 
-export const uploadDocument = async (req: MulterRequest, res: Response): Promise<void> => {
-  try {
-    const { operatorId, tag } = req.body;
-    const file = req.file;
-
-    if (!file || !operatorId || !tag) {
-      res.status(400).json({ error: 'Missing fields' });
-      return;
-    }
-
-    const isTemporary = operatorId.startsWith('temp-');
-
-    if (!(file as any).path) {
-      res.status(500).json({ error: 'File upload to Cloudinary failed' });
-      return;
-    }
-
-    const newDocument = new Document({
-      operatorId,
-      tag,
-      name: `${tag} - ${new Date().toLocaleDateString()}`,
-      originalName: file.originalname,
-      fileType: file.mimetype,
-      size: file.size,
-      url: (file as any).path,
-      uploadedAt: new Date(),
-      isTemporary: isTemporary
-    });
-
-    const savedDocument = await newDocument.save();
-    res.status(201).json(savedDocument);
-  } catch (err) {
-    console.error('Error uploading document:', err);
-    res.status(500).json({ error: (err as Error).message });
-  }
+const generateFileName = (workerId: string, documentType: string, originalName: string): string => {
+  const date = new Date().toISOString().split('T')[0];
+  const extension = originalName.split('.').pop();
+  const typeMap: { [key: string]: string } = {
+    'תעודת זהות': 'id',
+    'פרטי בנק': 'bank',
+    'אישור משטרה': 'police',
+    'תעודת הוראה': 'teaching',
+    'אחר': 'other'
+  };
+  
+  const fileType = typeMap[documentType] || 'other';
+  return `${workerId}-${fileType}-${date}.${extension}`;
 };
 
-export const getDocumentsByOperator = async (req: Request, res: Response): Promise<void> => {
+export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, next) => {
   try {
-    const { operatorId } = req.params;
-    const docs = await Document.find({ operatorId });
-    res.status(200).json(docs);
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
-  }
-};
-
-export const updateOperatorDocuments = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { tempId, newOperatorId } = req.body;
-
-    if (!tempId || !newOperatorId) {
-      res.status(400).json({ error: 'Missing tempId or newOperatorId' });
+    if (!req.file) {
+      res.status(400).json({ error: 'לא נבחר קובץ' });
       return;
     }
 
-    const result = await Document.updateMany(
-      { operatorId: tempId },
-      { 
-        $set: { 
-          operatorId: newOperatorId,
-          isTemporary: false 
-        } 
+    const { workerId, documentType, expiryDate } = req.body;
+    const { buffer, originalname, mimetype, size } = req.file;
+
+    if (!workerId || !documentType) {
+      res.status(400).json({ error: 'חסרים פרטים חובה' });
+      return;
+    }
+
+    try {
+      const operatorId = new Types.ObjectId(workerId);
+
+      const newFileName = generateFileName(workerId, documentType, originalname);
+      
+      const s3Key = await uploadFileToS3(buffer, newFileName, mimetype);
+      const url = await getSignedUrl(s3Key);
+
+      const doc = await DocumentModel.create({
+        operatorId,
+        fileName: newFileName,
+        fileType: mimetype,
+        size: size,
+        s3Key,
+        url,
+        expiryDate,
+        uploadedBy: req.user?.id || 'system',
+        tag: documentType,
+        status: DocumentStatus.PENDING,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      res.status(201).json(doc);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'CastError') {
+        res.status(400).json({ error: 'מזהה עובד לא תקין' });
+        return;
       }
+      throw error;
+    }
+  } catch (err: unknown) {
+    console.error('Error in uploadDocument:', err);
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
+  }
+};
+
+export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
+  try {
+    const { workerId } = req.params;
+    
+    try {
+      const operatorId = new Types.ObjectId(workerId);
+      const documents = await DocumentModel.find({ operatorId });
+
+      const docsWithUrls = await Promise.all(documents.map(async (doc) => {
+        const url = await getSignedUrl(doc.s3Key as string);
+        return { ...doc.toObject(), url };
+      }));
+
+      res.json(docsWithUrls);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'CastError') {
+        res.status(400).json({ error: 'מזהה עובד לא תקין' });
+        return;
+      }
+      throw error;
+    }
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
+  }
+};
+
+export const updateDocumentStatus: RequestHandler = async (req, res, next) => {
+  try {
+    const { documentId } = req.params;
+    console.log("documentId", documentId);
+    const { status} = req.body;
+    console.log("status", status);
+
+    const doc = await DocumentModel.findByIdAndUpdate(
+      documentId,
+      { status },
+      { new: true }
     );
 
-    res.status(200).json({ 
-      message: 'Documents updated successfully',
-      modifiedCount: result.modifiedCount,
-      matchedCount: result.matchedCount
-    });
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    if (!doc) {
+      res.status(404).json({ error: 'מסמך לא נמצא' });
+      return;
+    }
+
+    res.json(doc);
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
   }
 };
+
+export const deleteDocument: RequestHandler = async (req, res, next) => {
+  try {
+    const { documentId } = req.params;
+    
+    const doc = await DocumentModel.findById(documentId);
+    if (!doc) {
+      res.status(404).json({ error: 'מסמך לא נמצא' });
+      return;
+    }
+
+    await deleteFileFromS3(doc.s3Key as string);
+    
+    await DocumentModel.findByIdAndDelete(doc._id);
+
+    res.json({ message: 'מסמך נמחק בהצלחה' });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
+  }
+};
+
+export const getAllDocuments: RequestHandler = async (req, res, next) => {
+  try {
+    const documents = await DocumentModel.find();
+
+    const docsWithUrls = await Promise.all(documents.map(async (doc) => {
+      const url = await getSignedUrl(doc.s3Key as string);
+      return { ...doc.toObject(), url };
+    }));
+
+    res.json(docsWithUrls);
+
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
+  }
+};
+
+

@@ -86,12 +86,14 @@ export const deleteOperator = async (req: Request, res: Response): Promise<void>
   try {
     const operatorId = req.params.id;
 
-    const operator = await Operator.findByIdAndUpdate(operatorId, { isActive: false }, { new: true });
+    const operator = await Operator.findById(operatorId)
 
     if (!operator) {
       res.status(404).json({ error: 'Operator not found' });
       return;
     }
+
+    await Operator.findByIdAndDelete(operatorId);
 
     
     await Class.updateMany(

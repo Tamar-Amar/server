@@ -1,9 +1,15 @@
 import express from 'express';
-import { logAuth } from '../controllers/authController';
+import { logAuth, workerLogin, verifyWorkerCode } from '../controllers/authController';
 
 const router = express.Router();
 
-// Route: POST /api/auth
+// התחברות מפעיל/מנהל
 router.post('/', logAuth);
+
+// התחברות עובד - שלב ראשון
+router.post('/worker/login', workerLogin);
+
+// אימות קוד עובד - שלב שני
+router.post('/worker/verify', verifyWorkerCode);
 
 export default router;
