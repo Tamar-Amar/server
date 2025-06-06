@@ -9,7 +9,12 @@ import EmailLog from "../models/EmailLog";
 import nodemailer from "nodemailer";
 
 export const sendEmailController = async (req: Request, res: Response): Promise<void> => {
+  console.log("sendEmailController");
   const { to, subject, text, html } = req.body;
+  console.log("to", to);
+  console.log("subject", subject);
+  console.log("text", text);
+  console.log("html", html);
   const cc = "btrcrs25@gmail.com";
   
   if (!to || !subject || !text) {
