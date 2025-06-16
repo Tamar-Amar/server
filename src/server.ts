@@ -20,7 +20,7 @@ import emailRoutes from './routes/emailRoutes';
 import documentRoutes from './routes/documentRoutes';
 import workerRoutes from './routes/workerRoutes';
 import tagRoutes from './routes/tagRoutes';
-
+import attendanceRoutes from './routes/attendanceRoutes';
 
 dotenv.config();
 const app = express();
@@ -54,6 +54,7 @@ app.use('/api/contacts', contactRoutes);
 app.use('/api/generate-pdf-by-op', pdfRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 const path = require('path');
 app.post("/api/generate-pdf", (req, res) => {
