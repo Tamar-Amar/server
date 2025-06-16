@@ -1,26 +1,17 @@
-import { Request, Response, RequestHandler } from 'express';
-import DocumentModel, { DocumentStatus, DocumentType } from '../models/Document';
+import { Request, RequestHandler } from 'express';
+import DocumentModel, { DocumentStatus } from '../models/Document';
 import { uploadFileToS3, deleteFileFromS3, getSignedUrl } from '../services/s3Service';
 import { Types } from 'mongoose';
+
 
 interface RequestWithUser extends Request {
   user?: { id: string; role: string; idNumber: string };
   file?: Express.Multer.File;
 }
 
-const generateFileName = (workerId: string, documentType: string, originalName: string): string => {
+const generateFileName = (tz: string, documentType: string): string => {
   const date = new Date().toISOString().split('T')[0];
-  const extension = originalName.split('.').pop();
-  const typeMap: { [key: string]: string } = {
-    'תעודת זהות': 'id',
-    'פרטי בנק': 'bank',
-    'אישור משטרה': 'police',
-    'תעודת הוראה': 'teaching',
-    'אחר': 'other'
-  };
-  
-  const fileType = typeMap[documentType] || 'other';
-  return `${workerId}-${fileType}-${date}.${extension}`;
+  return `${tz}-${date}`;
 };
 
 export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, next) => {
@@ -30,8 +21,8 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
       return;
     }
 
-    const { workerId, documentType, expiryDate } = req.body;
-    const { buffer, originalname, mimetype, size } = req.file;
+    const { workerId, documentType, expiryDate, tz } = req.body;
+    const { buffer, mimetype, size } = req.file;
 
     if (!workerId || !documentType) {
       res.status(400).json({ error: 'חסרים פרטים חובה' });
@@ -40,9 +31,7 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
 
     try {
       const operatorId = new Types.ObjectId(workerId);
-
-      const newFileName = generateFileName(workerId, documentType, originalname);
-      
+      const newFileName = generateFileName(tz, documentType);
       const s3Key = await uploadFileToS3(buffer, newFileName, mimetype);
       const url = await getSignedUrl(s3Key);
 

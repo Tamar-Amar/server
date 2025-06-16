@@ -1,6 +1,16 @@
 import { RequestHandler } from 'express';
 import MonthlyAttendance from '../models/MonthlyAttendance';
 import Document from '../models/Document';
+import { deleteDocument } from './documentController';
+import { deleteFileFromS3 } from '../services/s3Service';
+
+// documentController.ts
+export const deleteDocumentByIdFromAms = async (documentId: string) => {
+  const doc = await Document.findById(documentId);
+  if (!doc) return;
+  await deleteFileFromS3(doc.s3Key as string);
+  await Document.findByIdAndDelete(doc._id);
+};
 
 export const deleteAttendanceRecord: RequestHandler = async (req, res) => {
   try {
@@ -15,13 +25,13 @@ export const deleteAttendanceRecord: RequestHandler = async (req, res) => {
 
     // Delete associated documents if they exist
     if (attendanceRecord.studentAttendanceDoc) {
-      await Document.findByIdAndDelete(attendanceRecord.studentAttendanceDoc);
+      await deleteDocumentByIdFromAms(attendanceRecord.studentAttendanceDoc.toString());
     }
     if (attendanceRecord.workerAttendanceDoc) {
-      await Document.findByIdAndDelete(attendanceRecord.workerAttendanceDoc);
+      await deleteDocumentByIdFromAms(attendanceRecord.workerAttendanceDoc.toString());
     }
     if (attendanceRecord.controlDoc) {
-      await Document.findByIdAndDelete(attendanceRecord.controlDoc);
+      await deleteDocumentByIdFromAms(attendanceRecord.controlDoc.toString());
     }
 
     // Delete the attendance record

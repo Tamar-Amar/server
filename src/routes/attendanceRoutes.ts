@@ -101,7 +101,13 @@ const updateAttendanceAttendanceDoc: RequestHandler = async (req, res) => {
 
 const getAllAttendance: RequestHandler = async (req, res) => {
     try {
-        const attendance = await MonthlyAttendance.find();
+        const attendance = await MonthlyAttendance.find()
+        .populate('workerId')
+        .populate('classId')
+        .populate('studentAttendanceDoc')
+        .populate('workerAttendanceDoc')
+        .populate('controlDoc');
+
         res.status(200).json(attendance);
     } catch (error) {
         console.error('Error fetching attendance:', error);
