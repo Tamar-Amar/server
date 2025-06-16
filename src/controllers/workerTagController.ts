@@ -17,7 +17,6 @@ export const addWorkerTag = async (req: Request, res: Response): Promise<void> =
 export const getWorkerTags = async (req: Request, res: Response): Promise<void> => {
   try {
     const tags = await Tag.find({ isActive: true });
-    console.log("Tags:", tags);
     res.json(tags);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

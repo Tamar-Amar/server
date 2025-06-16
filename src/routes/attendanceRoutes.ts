@@ -94,7 +94,6 @@ const updateAttendanceAttendanceDoc: RequestHandler = async (req, res) => {
     try {
         const { id } = req.params;
         const { docType, documentId } = req.body;
-        console.log("docType, documentId", docType, documentId);
 
         const attendance = await MonthlyAttendance.findByIdAndUpdate(id, { $set: { [docType]: documentId } }, { new: true });
         res.status(200).json(attendance);
@@ -115,6 +114,7 @@ const getAllAttendance: RequestHandler = async (req, res) => {
 }
 
 router.get('/', getAllAttendance);
+router.post('/submit', submitAttendance);
 router.get('/:workerId', getWorkerAttendance);
 router.get('/:classId', getClassAttendance);
 router.delete('/:id', deleteAttendanceRecord);

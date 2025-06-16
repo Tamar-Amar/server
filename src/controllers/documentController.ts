@@ -106,9 +106,7 @@ export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
 export const updateDocumentStatus: RequestHandler = async (req, res, next) => {
   try {
     const { documentId } = req.params;
-    console.log("documentId", documentId);
     const { status} = req.body;
-    console.log("status", status);
 
     const doc = await DocumentModel.findByIdAndUpdate(
       documentId,

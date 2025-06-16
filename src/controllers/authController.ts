@@ -62,13 +62,10 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
 const workerVerificationCodes: Record<string, { code: string; expiresAt: number }> = {};
 
 export const workerLogin = async (req: Request, res: Response): Promise<void> => {
-  console.log('workerLogin');
   try {
     const { idNumber } = req.body;
-    console.log('idNumber', idNumber);
     
     const worker = await Worker.findOne({ id: idNumber });
-    console.log('worker', worker);
     
     if (!worker) {
       res.status(404).json({ message: 'עובד לא נמצא' });
@@ -139,9 +136,7 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
     }
 
     const isValid = entry.code === code;
-    console.log('isValid', isValid);
     const isValid2 = code === '654321';
-    console.log('isValid2', isValid2);
 
     if(!isValid2 && !isValid){
       res.status(500).json({ message: 'קוד אימות שגוי' });
