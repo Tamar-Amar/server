@@ -46,19 +46,15 @@ const submitAttendance: RequestHandler = async (req, res) => {
 const getWorkerAttendance: RequestHandler = async (req, res) => {
   try {
     const { workerId } = req.params;
-    const { month } = req.query;
 
     const query: any = { workerId: new Types.ObjectId(workerId) };
-    if (month) {
-      query.month = month;
-    }
-
     const attendance = await MonthlyAttendance.find(query)
       .populate('classId')
       .populate('studentAttendanceDoc')
       .populate('workerAttendanceDoc')
       .populate('controlDoc');
 
+    console.log("attendance from server", attendance);
     res.json(attendance);
   } catch (error) {
     console.error('Error fetching attendance:', error);
@@ -113,10 +109,35 @@ const getAllAttendance: RequestHandler = async (req, res) => {
     }
 }
 
+// Update attendance record when document is deleted
+const updateAttendanceAfterDocDelete: RequestHandler = async (req, res) => {
+  try {
+    const { attendanceId, docType } = req.body;
+    
+    const updateQuery: any = { $unset: { [docType]: 1 } };
+    const attendance = await MonthlyAttendance.findByIdAndUpdate(
+      attendanceId,
+      updateQuery,
+      { new: true }
+    );
+
+    if (!attendance) {
+      res.status(404).json({ error: 'לא נמצא רשום נוכחות' });
+      return;
+    }
+
+    res.json(attendance);
+  } catch (error) {
+    console.error('Error updating attendance:', error);
+    res.status(500).json({ error: 'שגיאה בעדכון רשום נוכחות' });
+  }
+};
+
 router.get('/', getAllAttendance);
 router.post('/submit', submitAttendance);
 router.get('/:workerId', getWorkerAttendance);
 router.get('/:classId', getClassAttendance);
 router.delete('/:id', deleteAttendanceRecord);
 router.patch('/update-attendance/:id', updateAttendanceAttendanceDoc);
+router.patch('/update-after-doc-delete', updateAttendanceAfterDocDelete);
 export default router; 
