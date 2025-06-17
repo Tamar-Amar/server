@@ -1,7 +1,7 @@
 import Coordinator from '../models/Coordinator';
 import { Request, Response } from 'express';
 
-export const getAllCoordinators = async (req: Request, res: Response) => {
+export const getAllCoordinators = async (req: Request, res: Response): Promise<void> => {
   try {
     const coordinators = await Coordinator.find();
     res.json(coordinators);
@@ -10,17 +10,20 @@ export const getAllCoordinators = async (req: Request, res: Response) => {
   }
 };
 
-export const getCoordinatorById = async (req: Request, res: Response) => {
+export const getCoordinatorById  = async (req: Request, res: Response): Promise<void> => {
   try {
     const coordinator = await Coordinator.findById(req.params.id);
-    if (!coordinator) return res.status(404).json({ error: 'רכז לא נמצא' });
+    if (!coordinator){
+      res.status(404).json({ error: 'רכז לא נמצא' });
+      return;
+    } 
     res.json(coordinator);
   } catch (err) {
     res.status(500).json({ error: 'שגיאה בשליפת רכז' });
   }
 };
 
-export const createCoordinator = async (req: Request, res: Response) => {
+export const createCoordinator = async (req: Request, res: Response): Promise<void> => {
   try {
     const coordinator = new Coordinator(req.body);
     await coordinator.save();
@@ -30,20 +33,26 @@ export const createCoordinator = async (req: Request, res: Response) => {
   }
 };
 
-export const updateCoordinator = async (req: Request, res: Response) => {
+export const updateCoordinator = async (req: Request, res: Response): Promise<void> => {
   try {
     const coordinator = await Coordinator.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!coordinator) return res.status(404).json({ error: 'רכז לא נמצא' });
+    if (!coordinator){
+      res.status(404).json({ error: 'רכז לא נמצא' });
+      return;
+    } 
     res.json(coordinator);
   } catch (err) {
     res.status(400).json({ error: 'שגיאה בעדכון רכז', details: err });
   }
 };
 
-export const deleteCoordinator = async (req: Request, res: Response) => {
+export const deleteCoordinator = async (req: Request, res: Response): Promise<void>  => {
   try {
     const coordinator = await Coordinator.findByIdAndDelete(req.params.id);
-    if (!coordinator) return res.status(404).json({ error: 'רכז לא נמצא' });
+    if (!coordinator){
+      res.status(404).json({ error: 'רכז לא נמצא' });
+      return;
+    } 
     res.json({ message: 'רכז נמחק' });
   } catch (err) {
     res.status(400).json({ error: 'שגיאה במחיקת רכז', details: err });

@@ -20,6 +20,7 @@ export interface ClassDocument extends Document {
   workerAfterNoonId2: Types.ObjectId;
   institutionName: string;
   institutionCode: string;
+  coordinatorId: Types.ObjectId;
 }
 
 const ClassSchema: Schema = new Schema({
@@ -41,6 +42,7 @@ const ClassSchema: Schema = new Schema({
   description: { type: String, required: false },  
   workerAfterNoonId1: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon', required: false },
   workerAfterNoonId2: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon', required: false },
+  coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
 });
 
 ClassSchema.index({ institutionId: 1 }); 

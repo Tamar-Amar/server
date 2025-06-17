@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface WorkerAfterNoon extends Document {
   firstName: string;
@@ -18,6 +18,7 @@ export interface WorkerAfterNoon extends Document {
   notes?: string;
   roleType: string;
   roleName: string;
+  coordinatorId: Types.ObjectId;
 }
 
 const WorkerAfterNoonSchema: Schema = new Schema({
@@ -38,6 +39,7 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   notes: { type: String },
   roleType: { type: String },
   roleName: { type: String },
+  coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
 }, {
   toJSON: { getters: true },
   toObject: { getters: true }
