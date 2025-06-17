@@ -77,6 +77,7 @@ export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
         const url = await getSignedUrl(doc.s3Key as string);
         return { ...doc.toObject(), url };
       }));
+      console.log("docsWithUrls", docsWithUrls);
 
       res.json(docsWithUrls);
     } catch (error) {
