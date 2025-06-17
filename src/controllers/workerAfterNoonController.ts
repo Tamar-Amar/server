@@ -109,3 +109,13 @@ export const deleteWorker = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+export const deleteAllWorkers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    await WorkerAfterNoon.deleteMany({});
+    res.status(200).json({ message: 'כל העובדים נמחקו בהצלחה' });
+  } catch (err) {
+    console.error('Error deleting all workers:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
