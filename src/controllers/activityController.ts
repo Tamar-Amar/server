@@ -44,7 +44,7 @@ export const getActivitiesByClass = async (req: Request, res: Response): Promise
     try {
       const { classId } = req.params;
       const activities = await Activity.find({ classId })
-        .populate('operatorId', 'name phone')
+        .populate('operatorId', 'firstName lastName')
       res.json(activities);
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });

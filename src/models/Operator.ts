@@ -1,11 +1,6 @@
 // src/models/Operator.ts
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
-interface BusinessDetails {
-  businessId: string;
-  businessName: string;
-}
-
 interface WeeklySchedule {
   day: 'ראשון' | 'שני' | 'שלישי' | 'רביעי' | 'חמישי';
   classes: Types.ObjectId[];
@@ -23,8 +18,6 @@ export interface OperatorDocument extends Document {
   status: string;
   signDate: Date;
   paymentMethod: 'חשבונית' | 'תלוש' | 'לא נבחר';
-  businessDetails?: BusinessDetails;
-  bankDetailsId: Types.ObjectId;
   regularClasses: Types.ObjectId[];
   gender: 'בנים' | 'בנות' | 'גם וגם'; 
   educationType: 'רגיל' | 'מיוחד' | 'גם וגם'; 
@@ -54,8 +47,6 @@ const OperatorSchema: Schema = new Schema({
   email: { type: String, required: true, unique: true },
   description: { type: String },
   paymentMethod: { type: String, enum: ['חשבונית', 'תלוש', 'לא נבחר'], required: true },
-  businessDetails: { type: BusinessDetailsSchema, required: false },
-  bankDetailsId: { type: Schema.Types.ObjectId, ref: 'BankDetails', required: true },
   regularClasses: [{ type: Schema.Types.ObjectId, ref: 'Class' }],
   gender: { type: String, enum: ['בנים', 'בנות', 'גם וגם'], required: true, default: 'גם וגם' },
   educationType: { type: String, enum: ['רגיל', 'מיוחד', 'גם וגם'], required: true, default: 'גם וגם' }, 

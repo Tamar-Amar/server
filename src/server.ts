@@ -2,9 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db';
 import errorHandler from './middleware/errorHandler';
-// Import models to ensure they are registered
-import './models';
-import institutionRoutes from './routes/institutionRoutes';
 import classRoutes from './routes/classRoutes';
 import storeRoutes from './routes/storeRoutes';
 import activityRoutes from './routes/activityRoutes';
@@ -14,12 +11,10 @@ import purchaseRoutes from './routes/purchaseRoutes';
 import invoiceRoutes from './routes/invoiceRoutes';
 import authRoutes from './routes/authRoutes';
 import { generateAttendancePdf} from './utils/generatePdf';
-import contactRoutes from './routes/contactRoutes';
 import pdfRoutes from './routes/pdfRoutes';
 import emailRoutes from './routes/emailRoutes';
 import documentRoutes from './routes/documentRoutes';
-import workerRoutes from './routes/workerRoutes';
-import tagRoutes from './routes/tagRoutes';
+import workerRoutes from './routes/workerAfterNoonRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
 
 dotenv.config();
@@ -40,17 +35,14 @@ app.use(express.json());
 
 connectDB();
 
-app.use('/api/institutions', institutionRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/activities', activityRoutes);
 app.use("/api/operators", operatorRoutes);
-app.use("/api/workers", workerRoutes);
-app.use("/api/tags", tagRoutes);
+app.use("/api/worker-after-noon", workerRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/contacts', contactRoutes);
 app.use('/api/generate-pdf-by-op', pdfRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/documents', documentRoutes);

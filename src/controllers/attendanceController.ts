@@ -1,7 +1,6 @@
 import { RequestHandler } from 'express';
 import MonthlyAttendance from '../models/MonthlyAttendance';
 import Document from '../models/Document';
-import { deleteDocument } from './documentController';
 import { deleteFileFromS3 } from '../services/s3Service';
 
 // documentController.ts

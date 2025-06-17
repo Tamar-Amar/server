@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import Operator from '../models/Operator';
-import Worker from '../models/Worker';
+import Worker from '../models/WorkerAfterNoon';
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({

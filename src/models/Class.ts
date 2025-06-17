@@ -3,12 +3,11 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 export interface ClassDocument extends Document {
   _id: Types.ObjectId;
   name: string;
-  isSpecialEducation: boolean;
+  education: string;
   gender: 'בנים' | 'בנות';
   address: string;
   uniqueSymbol: string;
   chosenStore: Types.ObjectId;
-  institutionId: Types.ObjectId;
   type: 'כיתה' | 'גן';
   hasAfternoonCare: boolean;
   AfternoonOpenDate?: Date;
@@ -16,18 +15,22 @@ export interface ClassDocument extends Document {
   childresAmount?: number;
   regularOperatorId: Types.ObjectId;
   isActive: boolean;
-  contactsId: Types.ObjectId[]; 
   description: string;
+  workerAfterNoonId1: Types.ObjectId;
+  workerAfterNoonId2: Types.ObjectId;
+  institutionName: string;
+  institutionCode: string;
 }
 
 const ClassSchema: Schema = new Schema({
   address: { type: String, required: false },
   name: { type: String, required: true },
-  isSpecialEducation: { type: Boolean, required: true },
+  education: { type: String, required: true },
   gender: { type: String, enum: ['בנים', 'בנות'], required: true },
   uniqueSymbol: { type: String, required: true, unique: true },
   chosenStore: { type: Schema.Types.ObjectId, ref: 'Store', required: true },
-  institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },
+  institutionName: { type: String, required: true },
+  institutionCode: { type: String, required: true },
   regularOperatorId: { type: Schema.Types.ObjectId, ref: 'Operator', required: false }, 
   type: { type: String, enum: ['כיתה', 'גן'], required: true },
   hasAfternoonCare: { type: Boolean, default: false },
@@ -35,8 +38,9 @@ const ClassSchema: Schema = new Schema({
   childresAmount: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true }, 
   AfternoonOpenDate: { type: Date },
-  contactsId: [{ type: Schema.Types.ObjectId, ref: 'Contact' }],  
   description: { type: String, required: false },  
+  workerAfterNoonId1: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon', required: false },
+  workerAfterNoonId2: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon', required: false },
 });
 
 ClassSchema.index({ institutionId: 1 }); 

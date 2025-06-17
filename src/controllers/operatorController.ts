@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import Operator from '../models/Operator';
-import BankDetails from '../models/BankDetails';
 import jwt from 'jsonwebtoken';
 import Class from '../models/Class';
 
@@ -17,8 +16,6 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       address, 
       description, 
       paymentMethod, 
-      businessDetails, 
-      bankDetails, 
       gender, 
       educationType,
       regularClasses 
@@ -30,16 +27,8 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
     }
 
     const operatorAddress = address || "לא התקבלו פרטים";
-    const operatorBusinessDetails = businessDetails || { businessId: "לא התקבלו פרטים", businessName: "לא התקבלו פרטים" };
 
-    const newBankDetails = new BankDetails({
-      bankName: bankDetails.bankName,
-      accountNumber: bankDetails.accountNumber,
-      branchNumber: bankDetails.branchNumber,
-    });
-
-    await newBankDetails.save();
-
+    
     const newOperator = new Operator({
       firstName,
       lastName,
@@ -51,8 +40,6 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
       description,
       paymentMethod,
       status,
-      businessDetails: paymentMethod === "חשבונית" ? operatorBusinessDetails : undefined,
-      bankDetailsId: newBankDetails._id, 
       signDate: new Date(),
       gender,
       educationType,
@@ -74,7 +61,7 @@ export const addOperator = async (req: Request, res: Response): Promise<void> =>
 
 export const getOperators = async (req: Request, res: Response): Promise<void> => {
   try {
-    const operators = await Operator.find({ isActive: true }).populate("bankDetailsId");
+    const operators = await Operator.find({ isActive: true });
     res.json(operators);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -146,7 +133,7 @@ export const getCurrentOperator = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const operator = await Operator.findById(decoded.id).populate("bankDetailsId");
+    const operator = await Operator.findById(decoded.id);
     if (!operator) {
       res.status(404).json({ error: 'Operator not found' });
       return;
@@ -171,7 +158,6 @@ export const getOperatorById = async (req: Request, res: Response): Promise<void
     const { id } = req.params;
 
     const operator = await Operator.findById(id)
-    .populate("bankDetailsId")
     .populate({
       path: "regularClasses",
       select: "name uniqueSymbol", 

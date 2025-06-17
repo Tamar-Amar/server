@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 
 export const addClass = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, isSpecialEducation, gender, uniqueSymbol, chosenStore, institutionId, type, hasAfternoonCare, regularOperatorId } = req.body;
+    const { name, education, gender, address, uniqueSymbol, chosenStore, institutionName, institutionCode, type, hasAfternoonCare, monthlyBudget, childresAmount, AfternoonOpenDate, description, regularOperatorId, workerAfterNoonId1, workerAfterNoonId2  } = req.body;
 
     if (!name || !type) {
       res.status(400).json({ error: 'Missing required fields: name, type' });
@@ -20,13 +20,21 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
 
     const newClass = new Class({
       name,
-      isSpecialEducation,
+      education,
       gender,
+      address,
       uniqueSymbol,
       chosenStore,
-      institutionId,
+      institutionName,
+      institutionCode,  
+      workerAfterNoonId1,
+      workerAfterNoonId2,
       type,
       hasAfternoonCare,
+      monthlyBudget,
+      childresAmount,
+      AfternoonOpenDate,
+      description,
       regularOperatorId: regularOperatorId || null, 
       isActive: true, 
     });
@@ -35,22 +43,6 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
     res.status(201).json(newClass);
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
-  }
-};
-
-export const getClassesByInstitutionId = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { institutionId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(institutionId)) {
-      res.status(400).json({ error: 'Invalid institutionId format' });
-      return;
-    }
-
-    const classes = await Class.find({ institutionId, isActive: true });
-    res.json(classes);
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
   }
 };
 
