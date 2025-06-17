@@ -23,7 +23,7 @@ export interface WorkerAfterNoon extends Document {
 const WorkerAfterNoonSchema: Schema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  id: { type: String, required: true, unique: true },
+  id: { type: String, unique: true },
   accountantCode: { type: String },
   project: { type: String },
   createDate: { type: Date, default: Date.now },
@@ -32,7 +32,7 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   startDate: { type: Date },
   endDate: { type: Date },
   status: { type: String },
-  phone: { type: String, required: true },
+  phone: { type: String },
   email: { type: String },
   isActive: { type: Boolean, default: true },
   notes: { type: String },

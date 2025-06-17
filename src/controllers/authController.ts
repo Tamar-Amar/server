@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import Operator from '../models/Operator';
-import Worker from '../models/WorkerAfterNoon';
+import WorkerAfterNoon from '../models/WorkerAfterNoon';
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
@@ -65,7 +65,7 @@ export const workerLogin = async (req: Request, res: Response): Promise<void> =>
   try {
     const { idNumber } = req.body;
     
-    const worker = await Worker.findOne({ id: idNumber });
+    const worker = await WorkerAfterNoon.findOne({ id: idNumber });
     
     if (!worker) {
       res.status(404).json({ message: 'עובד לא נמצא' });
@@ -82,7 +82,6 @@ export const workerLogin = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const email = worker.email;
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 1000 * 60 * 5;
 
@@ -117,7 +116,7 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
   try {
     const { idNumber, code } = req.body;
     
-    const worker = await Worker.findOne({ id: idNumber });
+    const worker = await WorkerAfterNoon.findOne({ id: idNumber });
     
     if (!worker) {
       res.status(404).json({ message: 'עובד לא נמצא' });

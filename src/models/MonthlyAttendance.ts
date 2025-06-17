@@ -12,7 +12,7 @@ export interface MonthlyAttendanceDocument extends Document {
 }
 
 const MonthlyAttendanceSchema: Schema = new Schema({
-  workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true },
+  workerId: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon', required: true },
   classId: { type: Schema.Types.ObjectId, ref: 'Class', required: true },
   month: { type: String, required: true },
   studentAttendanceDoc: { type: Schema.Types.ObjectId, ref: 'Document' },

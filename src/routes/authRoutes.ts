@@ -7,9 +7,9 @@ const router = express.Router();
 router.post('/', logAuth);
 
 // התחברות עובד - שלב ראשון
-router.post('/worker/login', workerLogin);
+router.post('/worker-after-noon/login', workerLogin);
 
 // אימות קוד עובד - שלב שני
-router.post('/worker/verify', verifyWorkerCode);
+router.post('/worker-after-noon/verify', verifyWorkerCode);
 
 export default router;
