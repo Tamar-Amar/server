@@ -48,7 +48,8 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
 
 export const getAllClasses = async (req: Request, res: Response): Promise<void> => {
   try {
-    const classes = await Class.find({ isActive: true }).populate('workerAfterNoonId1').populate('workerAfterNoonId2');
+    const classes = await Class.find({ isActive: true });
+    console.log("classes from controller", classes);
     res.json(classes);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
