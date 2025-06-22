@@ -49,7 +49,6 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
 export const getAllClasses = async (req: Request, res: Response): Promise<void> => {
   try {
     const classes = await Class.find({ isActive: true });
-    console.log("classes from controller", classes);
     res.json(classes);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -77,7 +76,6 @@ export const updateClass = async (req: Request, res: Response): Promise<void> =>
   try {
     const { id } = req.params;
     const updateData = req.body;
-    console.log("updateData", updateData);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({ error: 'Invalid class ID format' });

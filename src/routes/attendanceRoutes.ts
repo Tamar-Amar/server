@@ -3,6 +3,7 @@ import { RequestHandler } from 'express';
 import MonthlyAttendance from '../models/MonthlyAttendance';
 import { Types } from 'mongoose';
 import { deleteAttendanceRecord } from '../controllers/attendanceController';
+import { getSignedUrl } from '../services/s3Service';
 
 const router = express.Router();
 
@@ -54,8 +55,26 @@ const getWorkerAttendance: RequestHandler = async (req, res) => {
       .populate('workerAttendanceDoc')
       .populate('controlDoc');
 
-    console.log("attendance from server", attendance);
-    res.json(attendance);
+    const attendanceWithUrls = await Promise.all(
+      attendance.map(async (record) => {
+        const recordObj = record.toObject();
+
+        const addUrlToDoc = async (doc: any) => {
+          if (doc && doc.s3Key) {
+            return { ...doc, url: await getSignedUrl(doc.s3Key) };
+          }
+          return doc;
+        };
+
+        recordObj.studentAttendanceDoc = await addUrlToDoc(recordObj.studentAttendanceDoc);
+        recordObj.workerAttendanceDoc = await addUrlToDoc(recordObj.workerAttendanceDoc);
+        recordObj.controlDoc = await addUrlToDoc(recordObj.controlDoc);
+
+        return recordObj;
+      })
+    );
+
+    res.json(attendanceWithUrls);
   } catch (error) {
     console.error('Error fetching attendance:', error);
     res.status(500).json({ error: 'Failed to fetch attendance records' });

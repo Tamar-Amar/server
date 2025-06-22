@@ -63,5 +63,5 @@ export const getSignedUrl = async (key: string): Promise<string> => {
     Key: key
   });
 
-  return getSignedUrlAWS(s3Client, command, { expiresIn: 3600 }); // URL תקף לשעה
+  return getSignedUrlAWS(s3Client, command, { expiresIn: 86400 }); // URL תקף ל-24 שעות
 };

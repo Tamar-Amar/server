@@ -33,7 +33,6 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
       const operatorId = new Types.ObjectId(workerId);
       const newFileName = generateFileName(tz, documentType);
       const s3Key = await uploadFileToS3(buffer, newFileName, mimetype);
-      const url = await getSignedUrl(s3Key);
 
       const doc = await DocumentModel.create({
         operatorId,
@@ -41,13 +40,12 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
         fileType: mimetype,
         size: size,
         s3Key,
-        url,
         expiryDate,
+        uploadedAt: new Date(),
         uploadedBy: req.user?.id || 'system',
         tag: documentType,
         status: DocumentStatus.PENDING,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        comments: ''
       });
 
       res.status(201).json(doc);
@@ -77,7 +75,6 @@ export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
         const url = await getSignedUrl(doc.s3Key as string);
         return { ...doc.toObject(), url };
       }));
-      console.log("docsWithUrls", docsWithUrls);
 
       res.json(docsWithUrls);
     } catch (error) {
