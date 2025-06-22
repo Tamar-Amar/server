@@ -19,7 +19,14 @@ export interface WorkerAfterNoon extends Document {
   roleType: string;
   roleName: string;
   coordinatorId: Types.ObjectId;
+  isAfterNoon: boolean;
+  isBaseWorker: boolean;
+  isHanukaCamp: boolean;
+  isPassoverCamp: boolean;
+  isSummerCamp: boolean;
+  is101: boolean;
 }
+
 
 const WorkerAfterNoonSchema: Schema = new Schema({
   firstName: { type: String, required: true },
@@ -40,6 +47,12 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   roleType: { type: String },
   roleName: { type: String },
   coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
+  isAfterNoon: { type: Boolean, default: false },
+  isBaseWorker: { type: Boolean, default: true },
+  isHanukaCamp: { type: Boolean, default: false },
+  isPassoverCamp: { type: Boolean, default: false },
+  isSummerCamp: { type: Boolean, default: false },
+  is101: { type: Boolean, default: false },
 }, {
   toJSON: { getters: true },
   toObject: { getters: true }
