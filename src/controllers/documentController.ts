@@ -1,5 +1,5 @@
 import { Request, RequestHandler } from 'express';
-import DocumentModel, { DocumentStatus } from '../models/Document';
+import DocumentModel, { Document, DocumentStatus, DocumentType } from '../models/Document';
 import { uploadFileToS3, deleteFileFromS3, getSignedUrl } from '../services/s3Service';
 import { Types } from 'mongoose';
 
@@ -136,11 +136,13 @@ export const deleteDocument: RequestHandler = async (req, res, next) => {
 
 export const getAllDocuments: RequestHandler = async (req, res, next) => {
   try {
-    const documents = await DocumentModel.find();
+    const documents = await DocumentModel.find().lean();
 
-    const docsWithUrls = await Promise.all(documents.map(async (doc) => {
-      const url = await getSignedUrl(doc.s3Key as string);
-      return { ...doc.toObject(), url };
+    const docsWithUrls = await Promise.all(documents.map(async (doc: any) => {
+      if (doc.s3Key) {
+        doc.url = await getSignedUrl(doc.s3Key as string);
+      }
+      return doc;
     }));
 
     res.json(docsWithUrls);
@@ -151,4 +153,28 @@ export const getAllDocuments: RequestHandler = async (req, res, next) => {
   }
 };
 
+export const getAllPersonalDocuments: RequestHandler = async (req, res, next) => {
+  try {
+    const personalDocTags = [
+      "תעודת זהות",
+      "אישור משטרה",
+      "תעודת השכלה",
+      "תעודת יושר",
+      "פרטי בנק",
+      'תיאום מס',
+      'טופס 101' 
+    ];
+    const documents: Document[] = await DocumentModel.find({ tag: { $in: personalDocTags } }).lean();
 
+    for (const doc of documents as any[]) {
+      if (doc.s3Key) {
+        doc.url = getSignedUrl(doc.s3Key as string);
+      }
+    }
+    
+    res.status(200).json(documents);
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
+  }
+};

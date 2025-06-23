@@ -5,7 +5,8 @@ import {
   getWorkerDocuments,
   updateDocumentStatus,
   deleteDocument,
-  getAllDocuments
+  getAllDocuments,
+  getAllPersonalDocuments,
 } from '../controllers/documentController';
 
 const router = express.Router();
@@ -19,12 +20,14 @@ const upload = multer({
 
 router.post('/upload', upload.single('file'), uploadDocument);
 
+router.get('/', getAllDocuments);
+
+router.get('/personal', getAllPersonalDocuments);
+
 router.get('/:workerId', getWorkerDocuments);
 
 router.patch('/status/:documentId', updateDocumentStatus);
 
 router.delete('/:documentId', deleteDocument);
-
-router.get('/', getAllDocuments);
 
 export default router;

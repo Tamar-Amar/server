@@ -10,7 +10,6 @@ export enum DocumentStatus {
 export enum DocumentType {
   ID = 'תעודת זהות',
   RESUME = 'קורות חיים',
-  EDUCATION = 'תעודות השכלה',
   CRIMINAL_RECORD = 'תעודת יושר',
   BANK_DETAILS = 'פרטי בנק',
   POLICE_APPROVAL = 'אישור משטרה',
