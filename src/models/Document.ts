@@ -14,7 +14,7 @@ export enum DocumentType {
   CRIMINAL_RECORD = 'תעודת יושר',
   BANK_DETAILS = 'פרטי בנק',
   POLICE_APPROVAL = 'אישור משטרה',
-  TEACHING_CERTIFICATE = 'תעודת הוראה',
+  TEACHING_CERTIFICATE = 'תעודת השכלה',
   OTHER = 'אחר'
 }
 
