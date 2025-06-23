@@ -168,7 +168,7 @@ export const getAllPersonalDocuments: RequestHandler = async (req, res, next) =>
 
     for (const doc of documents as any[]) {
       if (doc.s3Key) {
-        doc.url = getSignedUrl(doc.s3Key as string);
+        doc.url = await getSignedUrl(doc.s3Key as string);
       }
     }
     
