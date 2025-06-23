@@ -1,9 +1,9 @@
-import express from 'express';
-import { RequestHandler } from 'express';
+import express, { RequestHandler } from 'express';
 import MonthlyAttendance from '../models/MonthlyAttendance';
+import Document, { DocumentStatus } from '../models/Document';
+import {getSignedUrl } from '../services/s3Service';
 import { Types } from 'mongoose';
 import { deleteAttendanceRecord } from '../controllers/attendanceController';
-import { getSignedUrl } from '../services/s3Service';
 
 const router = express.Router();
 
@@ -127,7 +127,26 @@ const getAllAttendance: RequestHandler = async (req, res) => {
         .populate('workerAttendanceDoc')
         .populate('controlDoc');
 
-        res.status(200).json(attendance);
+        const attendanceWithUrls = await Promise.all(
+            attendance.map(async (record) => {
+                const recordObj = record.toObject();
+
+                const addUrlToDoc = async (doc: any) => {
+                  if (doc && doc.s3Key) {
+                    return { ...doc, url: await getSignedUrl(doc.s3Key) };
+                  }
+                  return doc;
+                };
+        
+                recordObj.studentAttendanceDoc = await addUrlToDoc(recordObj.studentAttendanceDoc);
+                recordObj.workerAttendanceDoc = await addUrlToDoc(recordObj.workerAttendanceDoc);
+                recordObj.controlDoc = await addUrlToDoc(recordObj.controlDoc);
+        
+                return recordObj;
+            })
+        );
+
+        res.status(200).json(attendanceWithUrls);
     } catch (error) {
         console.error('Error fetching attendance:', error);
         res.status(500).json({ error: 'Failed to fetch attendance records' });
