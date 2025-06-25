@@ -156,13 +156,10 @@ export const getAllDocuments: RequestHandler = async (req, res, next) => {
 export const getAllPersonalDocuments: RequestHandler = async (req, res, next) => {
   try {
     const personalDocTags = [
-      "תעודת זהות",
       "אישור משטרה",
       "תעודת השכלה",
-      "תעודת יושר",
-      "פרטי בנק",
-      'תיאום מס',
-      'טופס 101' 
+      'חוזה',
+      'טופס פנסיה'
     ];
     const documents: Document[] = await DocumentModel.find({ tag: { $in: personalDocTags } }).lean();
 
