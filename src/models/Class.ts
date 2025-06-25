@@ -16,8 +16,11 @@ export interface ClassDocument extends Document {
   regularOperatorId: Types.ObjectId;
   isActive: boolean;
   description: string;
-  workerAfterNoonId1: Types.ObjectId;
-  workerAfterNoonId2: Types.ObjectId;
+  workers: Array<{
+    workerId: Types.ObjectId;
+    roleType: string;
+    project: string;
+  }>;
   institutionName: string;
   institutionCode: string;
   coordinatorId: Types.ObjectId;
@@ -40,8 +43,11 @@ const ClassSchema: Schema = new Schema({
   isActive: { type: Boolean, default: true }, 
   AfternoonOpenDate: { type: Date },
   description: { type: String, required: false },  
-  workerAfterNoonId1: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon', required: false },
-  workerAfterNoonId2: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon', required: false },
+  workers: [{
+    workerId: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon' },
+    roleType: { type: String },
+    project: { type: String }
+  }],
   coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
 });
 
