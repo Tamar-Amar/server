@@ -157,6 +157,7 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
       token,
       worker: {
         id: worker.id,
+        _id: worker._id,
         firstName: worker.firstName,
         lastName: worker.lastName,
         email: worker.email
