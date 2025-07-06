@@ -7,7 +7,8 @@ declare global {
       user?: {
         id: string;
         role: string;
-        idNumber: string;
+        idNumber?: string;
+        username?: string;
       };
     }
   }
@@ -26,7 +27,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const user = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
       id: string;
       role: string;
-      idNumber: string;
+      idNumber?: string;
+      username?: string;
     };
     
     req.user = user;
