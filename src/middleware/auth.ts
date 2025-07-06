@@ -7,7 +7,8 @@ declare global {
       user?: {
         id: string;
         role: string;
-        idNumber: string;
+        idNumber?: string;
+        username?: string;
       };
     }
   }
@@ -18,19 +19,20 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ message: 'לא נמצא טוקן הזדהות' });
+    res.status(401).json({ message: 'לא נמצא טוקן הזדהות' });
+    return;
   }
 
   try {
     const user = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
       id: string;
       role: string;
-      idNumber: string;
+      idNumber?: string;
+      username?: string;
     };
-    
     req.user = user;
     next();
   } catch (error) {
-    return res.status(403).json({ message: 'טוקן לא תקין' });
+    res.status(403).json({ message: 'טוקן לא תקין' });
   }
 }; 

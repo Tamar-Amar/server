@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 
 
 interface RequestWithUser extends Request {
-  user?: { id: string; role: string; idNumber: string };
+  user?: { id: string; role: string; idNumber?: string };
   file?: Express.Multer.File;
 }
 
