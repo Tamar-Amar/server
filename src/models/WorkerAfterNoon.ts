@@ -25,6 +25,7 @@ export interface WorkerAfterNoon extends Document {
   isPassoverCamp: boolean;
   isSummerCamp: boolean;
   is101: boolean;
+  
 }
 
 

@@ -453,6 +453,17 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 export const getUserById = async (req: Request, res: Response) => {
   try {
+    if (req.user?.role === 'coordinator') {
+      if (req.user.id !== req.params.id) {
+        return res.status(403).json({ message: 'אין לך הרשאה לצפות במשתמש זה' });
+      }
+      const Coordinator = require('../models/Coordinator').default;
+      const coordinator = await Coordinator.findById(req.params.id);
+      if (!coordinator) {
+        return res.status(404).json({ message: 'רכז לא נמצא' });
+      }
+      return res.json(coordinator);
+    }
     const user = await User.findById(req.params.id, { password: 0 });
     if (!user) {
       res.status(404).json({ message: 'משתמש לא נמצא' });

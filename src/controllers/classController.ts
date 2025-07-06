@@ -94,3 +94,13 @@ export const updateClass = async (req: Request, res: Response): Promise<void> =>
     res.status(400).json({ error: (err as Error).message });
   }
 };
+
+export const getClassesByCoordinator = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { coordinatorId } = req.params;
+    const classes = await Class.find({ coordinatorId, isActive: true });
+    res.status(200).json(classes);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};

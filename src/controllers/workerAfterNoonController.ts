@@ -119,3 +119,13 @@ export const deleteAllWorkers = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+export const getWorkersByCoordinator = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { coordinatorId } = req.params;
+    const workers = await WorkerAfterNoon.find({ coordinatorId, isActive: true });
+    res.status(200).json(workers);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
