@@ -7,7 +7,7 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
     const { name, education, gender, address, uniqueSymbol, chosenStore, institutionName, institutionCode, type, hasAfternoonCare, monthlyBudget, childresAmount, AfternoonOpenDate, description, regularOperatorId, workerAfterNoonId1, workerAfterNoonId2, projectCode, street, streetNumber } = req.body;
 
     
-    // ולידציה לשדות חובה
+  
     if (!name || !type || !education || !gender || !uniqueSymbol || !institutionName || !institutionCode) {
       res.status(400).json({ 
         error: 'Missing required fields: name, type, education, gender, uniqueSymbol, institutionName, institutionCode',
@@ -24,7 +24,7 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // ולידציה לערכי enum
+  
     if (!['כיתה', 'גן'].includes(type)) {
       res.status(400).json({ error: 'Invalid type. Must be "כיתה" or "גן"' });
       return;
@@ -57,12 +57,12 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
       isActive: true, 
     };
 
-    // הוספת כתובת רק אם יש
+  
     if (address && address.trim() !== '') {
       newClassData.address = address;
     }
 
-    // הוספת שדות רק אם הם קיימים ולא ריקים
+  
     if (chosenStore && chosenStore.trim() !== '') {
       newClassData.chosenStore = chosenStore;
     }
@@ -73,7 +73,7 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
       newClassData.AfternoonOpenDate = AfternoonOpenDate;
     }
     if (projectCode) {
-      // אם projectCode הוא מספר בודד, נמיר אותו למערך
+    
       newClassData.projectCodes = Array.isArray(projectCode) ? projectCode : [projectCode];
     }
     if (street && street.trim() !== '') {
@@ -113,15 +113,15 @@ export const addMultipleClasses = async (req: Request, res: Response): Promise<v
       total: classes.length
     };
 
-    // בדיקת סמלים מאוחדים קיימים
+  
     const uniqueSymbols = classes.map((cls: any) => cls.uniqueSymbol).filter(Boolean);
     const existingClasses = await Class.find({ uniqueSymbol: { $in: uniqueSymbols } });
     const existingSymbols = new Set(existingClasses.map(cls => cls.uniqueSymbol));
 
-    // הכנת הנתונים לשמירה
+  
     const classesToSave = classes
       .filter((cls: any) => {
-        // ולידציה בסיסית
+      
         if (!cls.name || !cls.type || !cls.education || !cls.gender || !cls.uniqueSymbol || !cls.institutionName || !cls.institutionCode) {
           results.errors.push({
             uniqueSymbol: cls.uniqueSymbol || 'unknown',
@@ -130,7 +130,7 @@ export const addMultipleClasses = async (req: Request, res: Response): Promise<v
           return false;
         }
 
-        // בדיקת enum
+      
         if (!['כיתה', 'גן'].includes(cls.type)) {
           results.errors.push({
             uniqueSymbol: cls.uniqueSymbol,
@@ -147,7 +147,7 @@ export const addMultipleClasses = async (req: Request, res: Response): Promise<v
           return false;
         }
 
-        // בדיקה אם הסמל כבר קיים
+      
         if (existingSymbols.has(cls.uniqueSymbol)) {
           results.errors.push({
             uniqueSymbol: cls.uniqueSymbol,
@@ -174,7 +174,7 @@ export const addMultipleClasses = async (req: Request, res: Response): Promise<v
           isActive: true,
         };
 
-        // הוספת שדות אופציונליים
+      
         if (cls.address && cls.address.trim() !== '') {
           classData.address = cls.address;
         }
@@ -252,7 +252,6 @@ export const updateClass = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // הסרת שדות ריקים מהעדכון
     const cleanedUpdateData: any = {};
     Object.keys(updateData).forEach(key => {
       const value = updateData[key];
@@ -289,7 +288,7 @@ export const updateMultipleClasses = async (req: Request, res: Response): Promis
       total: updates.length
     };
 
-    // הכנת הפעולות לעדכון
+
     const bulkOperations: any[] = [];
     
     for (const update of updates) {
@@ -303,7 +302,7 @@ export const updateMultipleClasses = async (req: Request, res: Response): Promis
         continue;
       }
 
-      // הסרת שדות ריקים מהעדכון
+
       const cleanedUpdateData: any = {};
       Object.keys(updatedClass).forEach(key => {
         const value = updatedClass[key];
@@ -331,7 +330,7 @@ export const updateMultipleClasses = async (req: Request, res: Response): Promis
 
     if (bulkOperations.length > 0) {
       const bulkResult = await Class.bulkWrite(bulkOperations);      
-      // קבלת הכיתות המעודכנות
+
       const updatedIds = updates.map((update: any) => update.id).filter(Boolean);
       const updatedClasses = await Class.find({ _id: { $in: updatedIds } });
       results.updated = updatedClasses;

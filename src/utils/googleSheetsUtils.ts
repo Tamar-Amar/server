@@ -85,9 +85,9 @@ export const generateYearlySheet = async (
 
     const forecast = activeWeeksCount;
     const diff = forecast - total;
-    row.push(`${total}`);      // ניצול
-    row.push(`${forecast}`);   // צפי
-    row.push(`${diff}`);       // פער
+          row.push(`${total}`);
+      row.push(`${forecast}`);
+      row.push(`${diff}`);
     return row;
   });
 
@@ -160,9 +160,9 @@ export const generateMonthlySheets = async (
       const forecast = weekGroup.filter(w => !isFullHolidayWeek(w)).length;
       const diff = forecast - total;
 
-      row.push(`${total}`);    // ניצול
-      row.push(`${forecast}`); // צפי
-      row.push(`${diff}`);     // פער
+      row.push(`${total}`);
+      row.push(`${forecast}`);
+      row.push(`${diff}`);
       return row;
     });
 

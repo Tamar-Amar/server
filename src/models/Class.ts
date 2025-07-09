@@ -15,7 +15,7 @@ export interface ClassDocument extends Document {
   AfternoonOpenDate?: Date;
   monthlyBudget: number;
   childresAmount?: number;
-  projectCodes?: number[]; // שינוי למערך
+  projectCodes?: number[];
   regularOperatorId?: Types.ObjectId;
   isActive: boolean;
   description: string;

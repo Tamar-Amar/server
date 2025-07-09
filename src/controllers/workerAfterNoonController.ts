@@ -104,13 +104,12 @@ export const deleteWorker = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // מחיקת העובד מהכיתות
+
     const updateResult = await Class.updateMany(
       { 'workers.workerId': workerId },
       { $pull: { workers: { workerId: workerId } } }
     );
 
-    // מחיקת העובד
     await WorkerAfterNoon.findByIdAndDelete(workerId);
 
     res.status(200).json({ 
@@ -125,13 +124,11 @@ export const deleteWorker = async (req: Request, res: Response): Promise<void> =
 
 export const deleteAllWorkers = async (req: Request, res: Response): Promise<void> => {
   try {
-    // מחיקת כל העובדים מהכיתות
     const updateResult = await Class.updateMany(
       { workers: { $exists: true, $ne: [] } },
       { $set: { workers: [] } }
     );
 
-    // מחיקת כל העובדים
     const deleteResult = await WorkerAfterNoon.deleteMany({});
 
     res.status(200).json({ 
@@ -154,7 +151,7 @@ export const addMultipleWorkers = async (req: Request, res: Response): Promise<v
       res.status(400).json({ error: 'נדרש מערך של עובדים' });
       return;
     }    
-    // בדיקה אם העובדים כבר קיימים
+
     const existingWorkers = await WorkerAfterNoon.find({
       id: { $in: workersData.map(w => w.id) }
     });
@@ -187,7 +184,7 @@ export const addMultipleWorkers = async (req: Request, res: Response): Promise<v
       savedWorkers = await WorkerAfterNoon.insertMany(validatedWorkers);
     }
 
-    // החזרת כל העובדים (חדשים + קיימים)
+
     const allWorkers = [...savedWorkers, ...existingWorkers];
     res.status(201).json(allWorkers);
   } catch (err) {
@@ -205,13 +202,13 @@ export const deleteMultipleWorkers = async (req: Request, res: Response): Promis
       return;
     }
 
-    // מחיקת העובדים מהכיתות
+
     const updateResult = await Class.updateMany(
       { 'workers.workerId': { $in: workerIds } },
       { $pull: { workers: { workerId: { $in: workerIds } } } }
     );
 
-    // מחיקת העובדים
+
     const deleteResult = await WorkerAfterNoon.deleteMany({ _id: { $in: workerIds } });
 
     res.status(200).json({ 
