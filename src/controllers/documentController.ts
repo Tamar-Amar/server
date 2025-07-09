@@ -159,10 +159,9 @@ export const getAllPersonalDocuments: RequestHandler = async (req, res, next) =>
       "אישור משטרה",
       "תעודת השכלה",
       'חוזה',
-      'טופס פנסיה'
+      'תעודת זהות'
     ];
     const documents: Document[] = await DocumentModel.find({ tag: { $in: personalDocTags } }).lean();
-
     for (const doc of documents as any[]) {
       if (doc.s3Key) {
         doc.url = await getSignedUrl(doc.s3Key as string);

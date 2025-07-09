@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import WorkerAfterNoon from '../models/WorkerAfterNoon';
+import Class from '../models/Class';
 
 
 
@@ -96,14 +97,26 @@ export const updateWorker = async (req: Request, res: Response): Promise<void> =
 export const deleteWorker = async (req: Request, res: Response): Promise<void> => {
   try {
     const workerId = req.params.id;
-    const worker = await WorkerAfterNoon.findByIdAndDelete(workerId);
+    const worker = await WorkerAfterNoon.findById(workerId);
 
     if (!worker) {
       res.status(404).json({ error: 'העובד לא נמצא' });
       return;
     }
 
-    res.status(200).json({ message: 'העובד נמחק בהצלחה' });
+    // מחיקת העובד מהכיתות
+    const updateResult = await Class.updateMany(
+      { 'workers.workerId': workerId },
+      { $pull: { workers: { workerId: workerId } } }
+    );
+
+    // מחיקת העובד
+    await WorkerAfterNoon.findByIdAndDelete(workerId);
+
+    res.status(200).json({ 
+      message: 'העובד נמחק בהצלחה',
+      removedFromClasses: updateResult.modifiedCount
+    });
   } catch (err) {
     console.error('Error deleting worker:', err);
     res.status(500).json({ error: (err as Error).message });
@@ -112,10 +125,102 @@ export const deleteWorker = async (req: Request, res: Response): Promise<void> =
 
 export const deleteAllWorkers = async (req: Request, res: Response): Promise<void> => {
   try {
-    await WorkerAfterNoon.deleteMany({});
-    res.status(200).json({ message: 'כל העובדים נמחקו בהצלחה' });
+    // מחיקת כל העובדים מהכיתות
+    const updateResult = await Class.updateMany(
+      { workers: { $exists: true, $ne: [] } },
+      { $set: { workers: [] } }
+    );
+
+    // מחיקת כל העובדים
+    const deleteResult = await WorkerAfterNoon.deleteMany({});
+
+    res.status(200).json({ 
+      message: 'כל העובדים נמחקו בהצלחה',
+      deletedWorkers: deleteResult.deletedCount,
+      clearedFromClasses: updateResult.modifiedCount
+    });
   } catch (err) {
     console.error('Error deleting all workers:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+export const addMultipleWorkers = async (req: Request, res: Response): Promise<void> => {
+  try {    
+    const workersData = req.body.workers;
+    
+    if (!Array.isArray(workersData)) {
+      console.error('Invalid workers data - not an array:', workersData);
+      res.status(400).json({ error: 'נדרש מערך של עובדים' });
+      return;
+    }    
+    // בדיקה אם העובדים כבר קיימים
+    const existingWorkers = await WorkerAfterNoon.find({
+      id: { $in: workersData.map(w => w.id) }
+    });
+    
+    const existingIds = new Set(existingWorkers.map(w => w.id));
+    const newWorkers = workersData.filter(w => !existingIds.has(w.id));
+    const duplicateWorkers = workersData.filter(w => existingIds.has(w.id));
+    
+    
+    // Validate each new worker before creating
+    const validatedWorkers = [];
+    for (let i = 0; i < newWorkers.length; i++) {
+      try {
+        const worker = new WorkerAfterNoon(newWorkers[i]);
+        await worker.validate();
+        validatedWorkers.push(worker);
+      } catch (validationError) {
+        console.error(`Validation error for worker ${i}:`, validationError);
+        res.status(400).json({ 
+          error: `שגיאה בעובד מספר ${i + 1}: ${(validationError as Error).message}`,
+          workerIndex: i,
+          workerData: newWorkers[i]
+        });
+        return;
+      }
+    }
+
+    let savedWorkers: any[] = [];
+    if (validatedWorkers.length > 0) {
+      savedWorkers = await WorkerAfterNoon.insertMany(validatedWorkers);
+    }
+
+    // החזרת כל העובדים (חדשים + קיימים)
+    const allWorkers = [...savedWorkers, ...existingWorkers];
+    res.status(201).json(allWorkers);
+  } catch (err) {
+    console.error('Error adding multiple workers:', err);
+    res.status(400).json({ error: (err as Error).message });
+  }
+};
+
+export const deleteMultipleWorkers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { workerIds } = req.body;
+    
+    if (!Array.isArray(workerIds)) {
+      res.status(400).json({ error: 'נדרש מערך של מזהה עובדים' });
+      return;
+    }
+
+    // מחיקת העובדים מהכיתות
+    const updateResult = await Class.updateMany(
+      { 'workers.workerId': { $in: workerIds } },
+      { $pull: { workers: { workerId: { $in: workerIds } } } }
+    );
+
+    // מחיקת העובדים
+    const deleteResult = await WorkerAfterNoon.deleteMany({ _id: { $in: workerIds } });
+
+    res.status(200).json({ 
+      message: `${deleteResult.deletedCount} עובדים נמחקו בהצלחה`,
+      deletedWorkers: deleteResult.deletedCount,
+      removedFromClasses: updateResult.modifiedCount
+    });
+  } catch (err) {
+    console.error('Error deleting multiple workers:', err);
     res.status(500).json({ error: (err as Error).message });
   }
 };

@@ -9,9 +9,9 @@ import EmailLog from "../models/EmailLog";
 import nodemailer from "nodemailer";
 
 export const sendEmailController = async (req: Request, res: Response): Promise<void> => {
-  const { to, subject, text, html } = req.body;
+  const { from, replyTo, to, subject, text, html } = req.body;
 
-  const cc = "btrcrs25@gmail.com";
+  const bcc = "btrcrs25@gmail.com";
   
   if (!to || !subject || !text) {
     res.status(400).json({ error: "חסרים שדות חובה" });
@@ -19,7 +19,7 @@ export const sendEmailController = async (req: Request, res: Response): Promise<
   }
 
   try {
-    await sendEmail(to, subject, text, html, undefined, { cc });
+    await sendEmail(from, replyTo, to, subject, text, html, undefined, { bcc });
     res.status(200).json({ message: "המייל נשלח בהצלחה" });
   } catch (error) {
     console.error("❌ שגיאה בשליחת מייל:", error);
@@ -29,7 +29,7 @@ export const sendEmailController = async (req: Request, res: Response): Promise<
 
 
 export const sendPdfController = async (req: Request, res: Response): Promise<void> => {
-  const { month, operatorId, to } = req.body;
+  const { from, replyTo, month, operatorId, to } = req.body;
 
   if (!month || !operatorId || !to) {
     console.error("Missing required fields:", { month, operatorId, to });
@@ -63,6 +63,8 @@ export const sendPdfController = async (req: Request, res: Response): Promise<vo
     const pdfBuffer = await generateAttendancePdfBuffer(month, cleanedOperator);
 
     await sendEmail(
+      from,
+      replyTo,
       to,
       `דו"ח נוכחות לחודש ${month}`,
       "מצורף דוח נוכחות לחודש עבור המפעיל. ראו פרטים בגוף ההודעה.",
@@ -111,7 +113,7 @@ export const sendPdfController = async (req: Request, res: Response): Promise<vo
 
 
 export const sendMultipleEmailsController = async (req: Request, res: Response) => {
-  const { operatorIds, month, type, subject, text } = req.body;
+  const { from, replyTo, operatorIds, month, type, subject, text } = req.body;
   const results: { operatorId: string; email: string; success: boolean; error?: string }[] = [];
 
   for (const operatorId of operatorIds) {
@@ -145,6 +147,8 @@ export const sendMultipleEmailsController = async (req: Request, res: Response) 
         const pdfBuffer = await generateAttendancePdfBuffer(month, cleanedOperator);
 
         await sendEmail(
+          from,
+          replyTo,
           to,
           `דו"ח נוכחות לחודש ${month}`,
           "מצורף דוח נוכחות לחודש עבור המפעיל. ראו פרטים בגוף ההודעה.",
@@ -157,7 +161,7 @@ export const sendMultipleEmailsController = async (req: Request, res: Response) 
       }
 
       if (type === "text") {
-        await sendEmail(to, subject, text, undefined, undefined, { cc: "btrcrs25@gmail.com" });
+        await sendEmail(from, replyTo, to, subject, text, undefined, undefined, { cc: "btrcrs25@gmail.com" });
       }
 
 

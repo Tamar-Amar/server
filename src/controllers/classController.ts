@@ -5,25 +5,10 @@ import mongoose from 'mongoose';
 export const addClass = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, education, gender, address, uniqueSymbol, chosenStore, institutionName, institutionCode, type, hasAfternoonCare, monthlyBudget, childresAmount, AfternoonOpenDate, description, regularOperatorId, workerAfterNoonId1, workerAfterNoonId2, projectCode, street, streetNumber } = req.body;
-    console.log("בוא נציג את הפרמטרים שלנו", req.body);
-    console.log("שדות חובה:", { name, education, gender, uniqueSymbol, institutionName, institutionCode, type });
-    console.log("פירוט השדות:", {
-      name: typeof name, education: typeof education, gender: typeof gender,
-      uniqueSymbol: typeof uniqueSymbol, institutionName: typeof institutionName,
-      institutionCode: typeof institutionCode, type: typeof type
-    });
+
     
     // ולידציה לשדות חובה
     if (!name || !type || !education || !gender || !uniqueSymbol || !institutionName || !institutionCode) {
-      console.log("שדות חסרים:", { 
-        name: !!name, 
-        type: !!type, 
-        education: !!education, 
-        gender: !!gender, 
-        uniqueSymbol: !!uniqueSymbol, 
-        institutionName: !!institutionName, 
-        institutionCode: !!institutionCode 
-      });
       res.status(400).json({ 
         error: 'Missing required fields: name, type, education, gender, uniqueSymbol, institutionName, institutionCode',
         missing: { 
@@ -50,17 +35,13 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    console.log("עבר ולידציה - מחפש מסגרת קיימת...");
     const existingClass = await Class.findOne({ uniqueSymbol });
 
     if (existingClass) {
-      console.log("נמצאה מסגרת קיימת עם אותו סמל:", existingClass.uniqueSymbol);
       res.status(400).json({ error: 'Class with this uniqueSymbol already exists' });
       return;
     }
 
-    console.log("לא נמצאה מסגרת קיימת - יוצר חדשה...");
-    console.log("תצוגה ", req.body);
     const newClassData: any = {
       name,
       education,
@@ -109,20 +90,10 @@ export const addClass = async (req: Request, res: Response): Promise<void> => {
     }
 
     const newClass = new Class(newClassData);
-    console.log("תצוגה שנוצרה", newClass);
-    console.log("מנסה לשמור...");
     await newClass.save();
-    console.log("נשמר בהצלחה!");
     res.status(201).json(newClass);
   } catch (err) {
-    console.error('Error creating class:', err);
-    console.error('Error details:', {
-      name: (err as any).name,
-      message: (err as any).message,
-      code: (err as any).code,
-      keyPattern: (err as any).keyPattern,
-      keyValue: (err as any).keyValue
-    });
+
     res.status(400).json({ error: (err as Error).message });
   }
 };
@@ -135,8 +106,6 @@ export const addMultipleClasses = async (req: Request, res: Response): Promise<v
       res.status(400).json({ error: 'Classes array is required and must not be empty' });
       return;
     }
-
-    console.log(`מנסה לשמור ${classes.length} כיתות בבת אחת`);
 
     const results = {
       created: [] as any[],
@@ -234,7 +203,6 @@ export const addMultipleClasses = async (req: Request, res: Response): Promise<v
     if (classesToSave.length > 0) {
       const savedClasses = await Class.insertMany(classesToSave, { ordered: false });
       results.created = savedClasses;
-      console.log(`נשמרו בהצלחה ${savedClasses.length} כיתות`);
     }
 
     res.status(200).json({
@@ -279,9 +247,6 @@ export const updateClass = async (req: Request, res: Response): Promise<void> =>
     const { id } = req.params;
     const updateData = req.body;
 
-    console.log("עדכון מסגרת - ID:", id);
-    console.log("נתונים לעדכון:", updateData);
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({ error: 'Invalid class ID format' });
       return;
@@ -296,16 +261,12 @@ export const updateClass = async (req: Request, res: Response): Promise<void> =>
       }
     });
 
-    console.log("נתונים נקיים לעדכון:", cleanedUpdateData);
-
     const updatedClass = await Class.findByIdAndUpdate(id, cleanedUpdateData, { new: true, runValidators: true });
 
     if (!updatedClass) {
       res.status(404).json({ error: 'Class not found' });
       return;
     }
-
-    console.log("מסגרת עודכנה בהצלחה:", updatedClass.name);
     res.status(200).json(updatedClass);
   } catch (err) {
     console.error('Error updating class:', err);
@@ -321,8 +282,6 @@ export const updateMultipleClasses = async (req: Request, res: Response): Promis
       res.status(400).json({ error: 'Updates array is required and must not be empty' });
       return;
     }
-
-    console.log(`מנסה לעדכן ${updates.length} כיתות בבת אחת`);
 
     const results = {
       updated: [] as any[],
@@ -371,9 +330,7 @@ export const updateMultipleClasses = async (req: Request, res: Response): Promis
     }
 
     if (bulkOperations.length > 0) {
-      const bulkResult = await Class.bulkWrite(bulkOperations);
-      console.log(`עודכנו בהצלחה ${bulkResult.modifiedCount} כיתות`);
-      
+      const bulkResult = await Class.bulkWrite(bulkOperations);      
       // קבלת הכיתות המעודכנות
       const updatedIds = updates.map((update: any) => update.id).filter(Boolean);
       const updatedClasses = await Class.find({ _id: { $in: updatedIds } });
@@ -391,12 +348,41 @@ export const updateMultipleClasses = async (req: Request, res: Response): Promis
   }
 };
 
+
+
 export const getClassesByCoordinator = async (req: Request, res: Response): Promise<void> => {
   try {
     const { coordinatorId } = req.params;
     const classes = await Class.find({ coordinatorId, isActive: true });
     res.status(200).json(classes);
   } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+export const bulkAddWorkersToClasses = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { classToWorkersMap } = req.body;
+    if (!classToWorkersMap || typeof classToWorkersMap !== 'object') {
+      res.status(400).json({ error: 'classToWorkersMap is required' });
+      return;
+    }
+
+    const classIds = Object.keys(classToWorkersMap);
+    const bulkOps = classIds.map(classId => ({
+      updateOne: {
+        filter: { _id: new mongoose.Types.ObjectId(classId) },
+        update: { $push: { workers: { $each: classToWorkersMap[classId] } } }
+      }
+    }));
+
+    if (bulkOps.length > 0) {
+      await Class.bulkWrite(bulkOps);
+    }
+
+    res.json({ success: true, updated: classIds.length });
+  } catch (err) {
+    console.error('Error in bulkAddWorkersToClasses:', err);
     res.status(500).json({ error: (err as Error).message });
   }
 };

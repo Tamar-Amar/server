@@ -7,6 +7,7 @@ import {
     updateClass,
     updateMultipleClasses,
     getClassesByCoordinator,
+    bulkAddWorkersToClasses
 } from '../controllers/classController';
 import { authenticateToken } from '../middleware/authHandler';
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post('/', addClass);
 router.post('/bulk', addMultipleClasses);
 router.put('/bulk', updateMultipleClasses);
+router.post('/bulk-add-workers', bulkAddWorkersToClasses);
 router.delete('/:id', deleteClass);
 router.get('/', getAllClasses);
 router.put('/:id', updateClass);

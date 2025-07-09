@@ -17,6 +17,8 @@ interface EmailOptions {
 }
 
 export const sendEmail = async (
+  from: string,
+  replyTo: string,
   to: string,
   subject: string,
   text: string,
@@ -25,13 +27,13 @@ export const sendEmail = async (
   options?: EmailOptions
 ) => {
   const mailOptions = {
-    from: `"חוגים צעירון" <${process.env.EMAIL_USER}>`,
+    from: from,
+    replyTo,
     to,
     subject,
     text,
     html,
     attachments,
-    cc: options?.cc,
     bcc: options?.bcc, 
   };
 

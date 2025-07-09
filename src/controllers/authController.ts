@@ -301,7 +301,6 @@ export const coordinatorLogin = async (req: Request, res: Response): Promise<voi
   const { username, password } = req.body;
   try {
     const user = await User.findOne({ username });
-    console.log("user", user);
     
     if (user) {
       if (!user.isActive) {
