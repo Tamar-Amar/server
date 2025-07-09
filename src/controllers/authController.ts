@@ -300,7 +300,8 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
 export const coordinatorLogin = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
   try {
-    const user = await User.findOne({ username, role: 'coordinator' });
+    const user = await User.findOne({ username });
+    console.log("user", user);
     
     if (user) {
       if (!user.isActive) {
@@ -343,7 +344,7 @@ export const coordinatorLogin = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    res.status(404).json({ message: 'מפעיל חוגים לא נמצא' });
+    res.status(404).json({ message: 'משתמש לא נמצא' });
   } 
   
   catch (error) {
@@ -451,18 +452,21 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 };
 
-export const getUserById = async (req: Request, res: Response) => {
+export const getUserById = async (req: Request, res: Response): Promise<void> => {
   try {
     if (req.user?.role === 'coordinator') {
       if (req.user.id !== req.params.id) {
-        return res.status(403).json({ message: 'אין לך הרשאה לצפות במשתמש זה' });
+        res.status(403).json({ message: 'אין לך הרשאה לצפות במשתמש זה' });
+        return;
       }
       const Coordinator = require('../models/Coordinator').default;
       const coordinator = await Coordinator.findById(req.params.id);
       if (!coordinator) {
-        return res.status(404).json({ message: 'רכז לא נמצא' });
+        res.status(404).json({ message: 'רכז לא נמצא' });
+        return;
       }
-      return res.json(coordinator);
+      res.json(coordinator);
+      return;
     }
     const user = await User.findById(req.params.id, { password: 0 });
     if (!user) {
