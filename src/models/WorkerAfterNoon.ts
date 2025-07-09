@@ -5,7 +5,7 @@ export interface WorkerAfterNoon extends Document {
   lastName: string;
   id: string;
   accountantCode: string;
-  project: string;
+  projectCodes?: number[]; 
   createDate: Date; 
   updateDate: Date;
   updateBy: string;
@@ -34,7 +34,7 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   lastName: { type: String, required: true },
   id: { type: String, unique: true },
   accountantCode: { type: String },
-  project: { type: String },
+  projectCodes: { type: [Number] },
   createDate: { type: Date, default: Date.now },
   updateDate: { type: Date, default: Date.now },
   updateBy: { type: String },

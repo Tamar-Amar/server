@@ -313,6 +313,84 @@ export const updateClass = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+export const updateMultipleClasses = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { updates } = req.body;
+    
+    if (!Array.isArray(updates) || updates.length === 0) {
+      res.status(400).json({ error: 'Updates array is required and must not be empty' });
+      return;
+    }
+
+    console.log(`מנסה לעדכן ${updates.length} כיתות בבת אחת`);
+
+    const results = {
+      updated: [] as any[],
+      errors: [] as any[],
+      total: updates.length
+    };
+
+    // הכנת הפעולות לעדכון
+    const bulkOperations: any[] = [];
+    
+    for (const update of updates) {
+      const { id, updatedClass } = update;
+      
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        results.errors.push({
+          id: id || 'unknown',
+          error: 'Invalid class ID format'
+        });
+        continue;
+      }
+
+      // הסרת שדות ריקים מהעדכון
+      const cleanedUpdateData: any = {};
+      Object.keys(updatedClass).forEach(key => {
+        const value = updatedClass[key];
+        if (value !== null && value !== undefined && value !== '') {
+          cleanedUpdateData[key] = value;
+        }
+      });
+
+      if (Object.keys(cleanedUpdateData).length === 0) {
+        results.errors.push({
+          id: id,
+          error: 'No valid fields to update'
+        });
+        continue;
+      }
+
+      bulkOperations.push({
+        updateOne: {
+          filter: { _id: new mongoose.Types.ObjectId(id) },
+          update: { $set: cleanedUpdateData },
+          upsert: false
+        }
+      });
+    }
+
+    if (bulkOperations.length > 0) {
+      const bulkResult = await Class.bulkWrite(bulkOperations);
+      console.log(`עודכנו בהצלחה ${bulkResult.modifiedCount} כיתות`);
+      
+      // קבלת הכיתות המעודכנות
+      const updatedIds = updates.map((update: any) => update.id).filter(Boolean);
+      const updatedClasses = await Class.find({ _id: { $in: updatedIds } });
+      results.updated = updatedClasses;
+    }
+
+    res.status(200).json({
+      message: `Bulk update completed: ${results.updated.length} updated, ${results.errors.length} errors`,
+      results
+    });
+
+  } catch (err) {
+    console.error('Error updating multiple classes:', err);
+    res.status(400).json({ error: (err as Error).message });
+  }
+};
+
 export const getClassesByCoordinator = async (req: Request, res: Response): Promise<void> => {
   try {
     const { coordinatorId } = req.params;
