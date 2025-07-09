@@ -6,14 +6,17 @@ export interface ClassDocument extends Document {
   education: string;
   gender: 'בנים' | 'בנות';
   address: string;
+  street?: string;
+  streetNumber?: string;
   uniqueSymbol: string;
-  chosenStore: Types.ObjectId;
+  chosenStore?: Types.ObjectId;
   type: 'כיתה' | 'גן';
   hasAfternoonCare: boolean;
   AfternoonOpenDate?: Date;
   monthlyBudget: number;
   childresAmount?: number;
-  regularOperatorId: Types.ObjectId;
+  projectCodes?: number[]; // שינוי למערך
+  regularOperatorId?: Types.ObjectId;
   isActive: boolean;
   description: string;
   workers: Array<{
@@ -23,25 +26,28 @@ export interface ClassDocument extends Document {
   }>;
   institutionName: string;
   institutionCode: string;
-  coordinatorId: Types.ObjectId;
+  coordinatorId?: Types.ObjectId;
 }
 
 const ClassSchema: Schema = new Schema({
   address: { type: String, required: false },
+  street: { type: String, required: false },
+  streetNumber: { type: String, required: false },
+  projectCodes: { type: [Number], required: false },
   name: { type: String, required: true },
   education: { type: String, required: true },
   gender: { type: String, enum: ['בנים', 'בנות'], required: true },
   uniqueSymbol: { type: String, required: true, unique: true },
-  chosenStore: { type: Schema.Types.ObjectId, ref: 'Store', required: true },
+  chosenStore: { type: Schema.Types.ObjectId, ref: 'Store', required: false },
   institutionName: { type: String, required: true },
   institutionCode: { type: String, required: true },
   regularOperatorId: { type: Schema.Types.ObjectId, ref: 'Operator', required: false }, 
   type: { type: String, enum: ['כיתה', 'גן'], required: true },
   hasAfternoonCare: { type: Boolean, default: false },
-  monthlyBudget: { type: Number },
+  monthlyBudget: { type: Number, required: false },
   childresAmount: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true }, 
-  AfternoonOpenDate: { type: Date },
+  AfternoonOpenDate: { type: Date , required: false},
   description: { type: String, required: false },  
   workers: [{
     workerId: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon' },
