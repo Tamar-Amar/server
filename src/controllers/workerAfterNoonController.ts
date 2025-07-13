@@ -193,6 +193,87 @@ export const addMultipleWorkers = async (req: Request, res: Response): Promise<v
   }
 };
 
+export const validateWorkersExist = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { workerIds } = req.body;
+    
+    if (!Array.isArray(workerIds)) {
+      res.status(400).json({ error: 'נדרש מערך של תעודות זהות' });
+      return;
+    }
+
+    // מצא את כל העובדים הקיימים
+    const existingWorkers = await WorkerAfterNoon.find({ id: { $in: workerIds } }).lean();
+    const existingIds = existingWorkers.map(w => w.id);
+
+    res.status(200).json({ existingIds, existingWorkers });
+  } catch (err) {
+    console.error('Error validating workers exist:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+export const updateBatchWorkers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { field, updates } = req.body;
+    
+    if (!field || !Array.isArray(updates)) {
+      res.status(400).json({ error: 'נדרש שדה ומערך עדכונים' });
+      return;
+    }
+
+    const success: Array<{ id: string; oldValue: any; newValue: any }> = [];
+    const failed: Array<{ id: string; error: string }> = [];
+
+    for (const update of updates) {
+      try {
+        const { id, newValue } = update;
+        
+        // מצא את העובד לפי תעודת זהות
+        const worker = await WorkerAfterNoon.findOne({ id: id });
+        
+        if (!worker) {
+          failed.push({ id, error: 'העובד לא נמצא' });
+          continue;
+        }
+
+        const oldValue = worker.get(field);
+        
+        // טיפול מיוחד בשדות בוליאניים
+        let valueToSet = newValue;
+        if (field === 'is101' || field === 'isActive' || field === 'isAfterNoon' || 
+            field === 'isBaseWorker' || field === 'isHanukaCamp' || field === 'isPassoverCamp' || 
+            field === 'isSummerCamp') {
+          const stringValue = String(newValue).toLowerCase();
+          valueToSet = stringValue === 'יש' || stringValue === 'true' || stringValue === 'כן' || stringValue === '1';
+        }
+        
+        // בדיקה שהשדה לא הוא projectCodes (לא נתמך)
+        if (field === 'projectCodes') {
+          failed.push({ id, error: 'עדכון קודי פרויקט לא נתמך במערכת זו' });
+          continue;
+        }
+        
+        // עדכן את השדה
+        worker.set(field, valueToSet);
+        worker.updateDate = new Date();
+        
+        await worker.save();
+        
+        success.push({ id, oldValue, newValue });
+      } catch (error) {
+        console.error(`Error updating worker ${update.id}:`, error);
+        failed.push({ id: update.id, error: (error as Error).message });
+      }
+    }
+
+    res.status(200).json({ success, failed });
+  } catch (err) {
+    console.error('Error updating batch workers:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
 export const deleteMultipleWorkers = async (req: Request, res: Response): Promise<void> => {
   try {
     const { workerIds } = req.body;
