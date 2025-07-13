@@ -34,5 +34,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     next();
   } catch (error) {
     res.status(403).json({ message: 'טוקן לא תקין' });
+    return;
   }
 }; 

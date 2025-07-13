@@ -15,6 +15,10 @@ export interface IUser extends Document {
   updateBy: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  projectCodes?: Array<{
+    projectCode: number;
+    institutionCode: string;
+  }>;
 }
 
 const UserSchema: Schema = new Schema({
@@ -78,7 +82,25 @@ const UserSchema: Schema = new Schema({
   },
   resetPasswordExpires: {
     type: Date
-  }
+  },
+  projectCodes: [{
+    projectCode: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 8
+    },
+    institutionCode: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    institutionName: {
+      type: String,
+      required: true,
+      trim: true
+    }
+  }]
 });
 
 UserSchema.index({ username: 1 });

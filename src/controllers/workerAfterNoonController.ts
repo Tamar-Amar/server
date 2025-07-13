@@ -241,17 +241,19 @@ export const updateBatchWorkers = async (req: Request, res: Response): Promise<v
         
         // טיפול מיוחד בשדות בוליאניים
         let valueToSet = newValue;
-        if (field === 'is101' || field === 'isActive' || field === 'isAfterNoon' || 
-            field === 'isBaseWorker' || field === 'isHanukaCamp' || field === 'isPassoverCamp' || 
-            field === 'isSummerCamp') {
+        if (field === 'is101' || field === 'isActive') {
           const stringValue = String(newValue).toLowerCase();
           valueToSet = stringValue === 'יש' || stringValue === 'true' || stringValue === 'כן' || stringValue === '1';
         }
         
-        // בדיקה שהשדה לא הוא projectCodes (לא נתמך)
+        // טיפול מיוחד ב-projectCodes
         if (field === 'projectCodes') {
-          failed.push({ id, error: 'עדכון קודי פרויקט לא נתמך במערכת זו' });
-          continue;
+          if (Array.isArray(newValue)) {
+            valueToSet = newValue;
+          } else {
+            failed.push({ id, error: 'קודי פרויקט חייבים להיות מערך' });
+            continue;
+          }
         }
         
         // עדכן את השדה
@@ -306,9 +308,102 @@ export const deleteMultipleWorkers = async (req: Request, res: Response): Promis
 export const getWorkersByCoordinator = async (req: Request, res: Response): Promise<void> => {
   try {
     const { coordinatorId } = req.params;
-    const workers = await WorkerAfterNoon.find({ coordinatorId, isActive: true });
-    res.status(200).json(workers);
+    
+    // קבלת פרטי הרכז
+    const User = require('../models/User').default;
+    const coordinator = await User.findById(coordinatorId);
+    
+    
+    if (!coordinator) {
+      res.status(404).json({ error: 'רכז לא נמצא' });
+      return;
+    }
+
+    // אם אין שיוכי פרויקטים, החזר מערך ריק
+    if (!coordinator.projectCodes || coordinator.projectCodes.length === 0) {
+      
+      res.status(200).json([]);
+      return;
+    }
+
+    // יצירת רשימת קודי מוסד של הרכז
+    const coordinatorInstitutionCodes = coordinator.projectCodes.map((pc: any) => pc.institutionCode);
+    
+    
+    // מציאת כל הכיתות של קודי המוסד של הרכז
+    const classes = await Class.find({
+      institutionCode: { $in: coordinatorInstitutionCodes }
+    });
+    
+
+    // יצירת רשימת עובדים עם פרטי הכיתה
+    const workersWithClassInfo: any[] = [];
+    classes.forEach(cls => {
+      if (cls.workers) {
+        cls.workers.forEach((worker: any) => {
+          // בדיקה שהעובד שייך לפרויקט שהרכז אחראי עליו
+          const coordinatorProjectCodes = coordinator.projectCodes
+            .filter((pc: any) => pc.institutionCode === cls.institutionCode)
+            .map((pc: any) => pc.projectCode);
+          
+          if (coordinatorProjectCodes.includes(worker.project)) {
+            workersWithClassInfo.push({
+              workerId: worker.workerId,
+              classSymbol: cls.uniqueSymbol,
+              className: cls.name,
+              project: worker.project,
+              roleType: worker.roleType
+            });
+          }
+        });
+      }
+    });
+
+    // קבלת פרטי העובדים
+    const workerIds = workersWithClassInfo.map(w => w.workerId);
+    const workers = await WorkerAfterNoon.find({
+      _id: { $in: workerIds },
+      isActive: true
+    }).sort({ lastName: 1, firstName: 1 });
+
+    // קבלת מספר הטפסים לכל עובד
+    const Document = require('../models/Document').default;
+    const documentsCounts = await Document.aggregate([
+      {
+        $match: {
+          operatorId: { $in: workerIds }
+        }
+      },
+      {
+        $group: {
+          _id: '$operatorId',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // יצירת מפה של מספר טפסים לכל עובד
+    const documentsMap = new Map();
+    documentsCounts.forEach((doc: any) => {
+      documentsMap.set(doc._id.toString(), doc.count);
+    });
+
+    // שילוב פרטי העובדים עם פרטי הכיתה ומספר הטפסים
+    const workersWithDetails = workers.map(worker => {
+      const classInfo = workersWithClassInfo.find(w => w.workerId.toString() === (worker._id as any).toString());
+      return {
+        ...worker.toObject(),
+        classSymbol: classInfo?.classSymbol || '',
+        className: classInfo?.className || '',
+        project: classInfo?.project || null,
+        roleType: classInfo?.roleType || '',
+        documentsCount: documentsMap.get((worker._id as any).toString()) || 0
+      };
+    });
+
+    res.status(200).json(workersWithDetails);
   } catch (err) {
+    console.error('Error fetching workers by coordinator:', err);
     res.status(500).json({ error: (err as Error).message });
   }
 };

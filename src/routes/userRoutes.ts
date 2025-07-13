@@ -5,9 +5,11 @@ import {
   getUserById, 
   updateUser, 
   changePassword, 
-  deleteUser 
+  deleteUser,
+  importCoordinators
 } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
+import { upload } from '../controllers/uploadController';
 
 const router = express.Router();
 
@@ -24,5 +26,7 @@ router.put('/:id', updateUser);
 router.put('/:id/password', changePassword);
 
 router.delete('/:id', deleteUser);
+
+router.post('/import-coordinators', upload, importCoordinators);
 
 export default router; 

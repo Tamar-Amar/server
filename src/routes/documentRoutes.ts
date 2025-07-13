@@ -25,6 +25,7 @@ router.get('/', getAllDocuments);
 router.get('/personal', getAllPersonalDocuments);
 
 router.get('/:workerId', getWorkerDocuments);
+router.get('/worker/:workerId', getWorkerDocuments);
 
 router.patch('/status/:documentId', updateDocumentStatus);
 

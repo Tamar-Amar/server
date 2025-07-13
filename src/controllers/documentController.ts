@@ -73,7 +73,13 @@ export const getWorkerDocuments: RequestHandler = async (req, res, next) => {
 
       const docsWithUrls = await Promise.all(documents.map(async (doc) => {
         const url = await getSignedUrl(doc.s3Key as string);
-        return { ...doc.toObject(), url };
+        const docObj = doc.toObject();
+        return { 
+          ...docObj, 
+          url,
+          createdAt: docObj.uploadedAt, // מיפוי uploadedAt ל-createdAt
+          updatedAt: docObj.uploadedAt  // מיפוי uploadedAt ל-updatedAt
+        };
       }));
 
       res.json(docsWithUrls);
@@ -142,7 +148,11 @@ export const getAllDocuments: RequestHandler = async (req, res, next) => {
       if (doc.s3Key) {
         doc.url = await getSignedUrl(doc.s3Key as string);
       }
-      return doc;
+      return {
+        ...doc,
+        createdAt: doc.uploadedAt, // מיפוי uploadedAt ל-createdAt
+        updatedAt: doc.uploadedAt  // מיפוי uploadedAt ל-updatedAt
+      };
     }));
 
     res.json(docsWithUrls);
@@ -166,6 +176,8 @@ export const getAllPersonalDocuments: RequestHandler = async (req, res, next) =>
       if (doc.s3Key) {
         doc.url = await getSignedUrl(doc.s3Key as string);
       }
+      doc.createdAt = doc.uploadedAt; // מיפוי uploadedAt ל-createdAt
+      doc.updatedAt = doc.uploadedAt;  // מיפוי uploadedAt ל-updatedAt
     }
     
     res.status(200).json(documents);
