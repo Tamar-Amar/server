@@ -23,6 +23,7 @@ export interface OperatorDocument extends Document {
   educationType: 'רגיל' | 'מיוחד' | 'גם וגם'; 
   isActive: boolean;
   weeklySchedule: WeeklySchedule[];
+  lastLogin?: Date;
 }
 
 const BusinessDetailsSchema: Schema = new Schema({
@@ -51,6 +52,7 @@ const OperatorSchema: Schema = new Schema({
   gender: { type: String, enum: ['בנים', 'בנות', 'גם וגם'], required: true, default: 'גם וגם' },
   educationType: { type: String, enum: ['רגיל', 'מיוחד', 'גם וגם'], required: true, default: 'גם וגם' }, 
   isActive:{type: Boolean, default: true},
+  lastLogin: { type: Date },
   weeklySchedule: { 
     type: [WeeklyScheduleSchema], 
     default: [

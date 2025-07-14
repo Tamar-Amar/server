@@ -21,6 +21,7 @@ export interface WorkerAfterNoon extends Document {
   roleName: string;
   coordinatorId: Types.ObjectId;
   is101: boolean;
+  lastLogin?: Date;
   
 }
 
@@ -46,6 +47,7 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   roleName: { type: String },
   coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
   is101: { type: Boolean, default: false },
+  lastLogin: { type: Date },
 }, {
   toJSON: { getters: true },
   toObject: { getters: true }

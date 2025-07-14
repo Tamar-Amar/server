@@ -196,11 +196,7 @@ async function createCompleteBackup() {
     
     let totalRecords = 0;
     Object.entries(results).forEach(([key, result]) => {
-      if (result) {
-        totalRecords += result.count;
-      } else {
-        console.log(`${key}: Error`);
-      }
+      if (result) totalRecords += result.count;
     });
         
     const backupDir = getBackupDir();

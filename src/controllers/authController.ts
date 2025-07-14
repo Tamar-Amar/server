@@ -165,6 +165,10 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
       recordLoginAttempt(username, true);
       logSecurityEvent('OPERATOR_LOGIN_SUCCESS', { username, ip: clientIP });
 
+      // עדכון זמן התחברות אחרון
+      operator.lastLogin = new Date();
+      await operator.save();
+
       const token = jwt.sign(
         { 
           id: operator._id, 
@@ -280,6 +284,10 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
       res.status(500).json({ message: 'קוד אימות שגוי' });
       return;
     }
+    
+    // עדכון זמן התחברות אחרון
+    worker.lastLogin = new Date();
+    await worker.save();
     
     const token = jwt.sign(
       { 
@@ -876,15 +884,6 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
     }
     const projectCode = parseInt(req.body.projectCode);
 
-    console.log('File received:', {
-      hasFile: !!file,
-      fileName: file?.originalname,
-      fileSize: file?.size,
-      fileType: file?.mimetype,
-      hasBuffer: !!file?.buffer,
-      hasData: !!file?.data
-    });
-
     if (!file) {
       res.status(400).json({ message: 'קובץ אקסל נדרש' });
       return;
@@ -901,12 +900,9 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
 
     const XLSX = require('xlsx');
     const buffer = file.data || file.buffer;
-    console.log('Buffer size:', buffer?.length);
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    console.log('Sheet names:', workbook.SheetNames);
-    console.log('Worksheet range:', worksheet['!ref']);
     const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
     if (data.length < 2) {
@@ -915,9 +911,6 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
     }
 
     const headers = data[0] as string[];
-    console.log('Headers from file:', headers);
-    console.log('All data rows:', data.length);
-    console.log('First 3 rows:', data.slice(0, 3));
     const requiredColumns = ['ת.זהות', 'שם משפחה', 'שם פרטי', 'נייד', 'מייל עובד', 'קוד מוסד'];
     for (const column of requiredColumns) {
       if (!headers.includes(column)) {
@@ -935,29 +928,22 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
       const row = data[i] as any[];
       if (!row || row.length === 0) continue;
       try {
-        console.log(`Processing row ${i + 1}:`, row);
         const idNumber = String(row[headers.indexOf('ת.זהות')] || '').trim();
         const lastName = String(row[headers.indexOf('שם משפחה')] || '').trim();
         const firstName = String(row[headers.indexOf('שם פרטי')] || '').trim();
         const phone = String(row[headers.indexOf('נייד')] || '').trim();
         const email = String(row[headers.indexOf('מייל עובד')] || '').trim();
         const institutionCode = String(row[headers.indexOf('קוד מוסד')] || '').trim();
-        console.log(`Extracted data for row ${i + 1}:`, {
-          idNumber, lastName, firstName, phone, email, institutionCode
-        });
         if (!idNumber || !lastName || !firstName || !phone || !email || !institutionCode) {
-          console.log(`Row ${i + 1}: Missing required data`);
           errors.push(`שורה ${i + 1}: חסרים נתונים חובה`);
           continue;
         }
 
         const existingUser = await User.findOne({ username: idNumber });
         if (existingUser) {
-          console.log(`Row ${i + 1}: User already exists: ${idNumber}`);
           errors.push(`שורה ${i + 1}: משתמש עם תעודת זהות ${idNumber} כבר קיים`);
           continue;
         }
-        console.log(`Row ${i + 1}: Creating user with ID: ${idNumber}`);
         const defaultPassword = idNumber; // הסיסמה היא התז שלהם
         const hashedPassword = await hashPassword(defaultPassword);
         // אם קוד מוסד קיים - נכניס projectCodes, אחרת לא
@@ -969,7 +955,6 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
             institutionName: 'לא נבחר'
           }];
         }
-        console.log(`Row ${i + 1}: Institution code ${institutionCode} valid: ${validInstitutionCodes.has(institutionCode)}`);
         const newUser = new User({
           username: idNumber,
           password: hashedPassword,
@@ -986,7 +971,6 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
         });
         await newUser.save();
         createdCount++;
-        console.log(`Row ${i + 1}: User created successfully`);
       } catch (error) {
         console.error(`Error processing row ${i + 1}:`, error);
         errors.push(`שורה ${i + 1}: שגיאה בעיבוד הנתונים`);
