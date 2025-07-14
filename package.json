@@ -9,9 +9,7 @@
     "dev": "ts-node-dev src/server.ts",
     "security-check": "node security-check.js",
     "audit": "npm audit && npm audit fix",
-    "data-backup": "node dataBackup.js backup",
-    "secure-backup": "node secureBackup.js create",
-    "secure-backup-stats": "node secureBackup.js stats"
+    "data-backup": "node dataBackup.js backup"
   },
   "keywords": [],
   "author": "",
