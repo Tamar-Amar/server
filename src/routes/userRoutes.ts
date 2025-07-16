@@ -6,7 +6,8 @@ import {
   updateUser, 
   changePassword, 
   deleteUser,
-  importCoordinators
+  importCoordinators,
+  impersonateUser
 } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
 import { upload } from '../controllers/uploadController';
@@ -28,5 +29,7 @@ router.put('/:id/password', changePassword);
 router.delete('/:id', deleteUser);
 
 router.post('/import-coordinators', upload, importCoordinators);
+
+router.post('/:id/impersonate', impersonateUser);
 
 export default router; 

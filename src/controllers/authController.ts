@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import Operator from '../models/Operator';
 import WorkerAfterNoon from '../models/WorkerAfterNoon';
@@ -7,7 +7,7 @@ import { comparePassword, hashPassword } from '../utils/passwordUtils';
 import nodemailer from 'nodemailer';
 
 // הרחבת הטיפוס Request כדי לכלול את המאפיין user
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     role: string;
@@ -788,7 +788,7 @@ export const forgotPassword = async (req: AuthenticatedRequest, res: Response) =
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: 'איפוס סיסמה - מערכת Leadtay',
+      subject: 'איפוס סיסמה - מערכת צעירון',
       html: emailContent
     });
 
@@ -988,6 +988,37 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
   } catch (error) {
     console.error('Error importing coordinators:', error);
     res.status(500).json({ message: 'שגיאה בייבוא רכזים' });
+  }
+};
+
+export const impersonateUser = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // נשתמש ב-casting כדי לקבל את user
+    const user = req.user;
+    if (!user || user.role !== 'admin') {
+      res.status(403).json({ message: 'גישה אסורה' });
+      return;
+    }
+    const userId = req.params.id;
+    const userDoc = await User.findById(userId);
+    if (!userDoc) {
+      res.status(404).json({ message: 'משתמש לא נמצא' });
+      return;
+    }
+    // צור טוקן חדש עבור המשתמש
+    const token = jwt.sign(
+      {
+        id: userDoc._id,
+        role: userDoc.role,
+        username: userDoc.username
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+    res.json({ token, user: userDoc });
+  } catch (error) {
+    console.error('Impersonate error:', error);
+    res.status(500).json({ message: 'שגיאה בהתחזות' });
   }
 };
 
