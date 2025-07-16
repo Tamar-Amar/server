@@ -19,6 +19,7 @@ export interface IUser extends Document {
     projectCode: number;
     institutionCode: string;
   }>;
+  accountantInstitutionCodes?: string[]; // קודי מוסד לחשבי שכר
 }
 
 const UserSchema: Schema = new Schema({
@@ -100,6 +101,10 @@ const UserSchema: Schema = new Schema({
       required: true,
       trim: true
     }
+  }],
+  accountantInstitutionCodes: [{
+    type: String,
+    trim: true
   }]
 });
 

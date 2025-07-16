@@ -1,5 +1,18 @@
 import express from 'express';
-import { addWorker, addMultipleWorkers, deleteAllWorkers, deleteWorker, deleteMultipleWorkers, getWorkerById, getWorkers, updateWorker, getWorkersByCoordinator, updateBatchWorkers, validateWorkersExist } from '../controllers/workerAfterNoonController';
+import {
+  getWorkers,
+  getWorkerById,
+  addWorker,
+  updateWorker,
+  deleteWorker,
+  getWorkersByCoordinator,
+  getWorkersByAccountant,
+  validateWorkersExist,
+  updateBatchWorkers,
+  deleteAllWorkers,
+  addMultipleWorkers,
+  deleteMultipleWorkers
+} from '../controllers/workerAfterNoonController';
 import { authenticateToken } from '../middleware/authHandler';
 
 
@@ -16,5 +29,6 @@ router.put('/:id', updateWorker);
 router.delete('/:id', deleteWorker);
 router.delete('/', deleteAllWorkers);
 router.get('/coordinator/:coordinatorId', authenticateToken, getWorkersByCoordinator);
+router.get('/accountant/:accountantId', authenticateToken, getWorkersByAccountant);
 
 export default router; 

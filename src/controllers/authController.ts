@@ -589,7 +589,7 @@ export const getUserById = async (req: AuthenticatedRequest, res: Response): Pro
 
 export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { username, role, firstName, lastName, email, phone, isActive, projectCodes } = req.body;
+    const { username, role, firstName, lastName, email, phone, isActive, projectCodes ,accountantInstitutionCodes} = req.body;
     const userId = req.params.id;
 
     const user = await User.findById(userId);
@@ -640,11 +640,13 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
     if (phone !== undefined) user.phone = phone;
     if (isActive !== undefined) user.isActive = isActive;
     if (projectCodes !== undefined) user.projectCodes = projectCodes;
-    
+    if (accountantInstitutionCodes !== undefined) user.accountantInstitutionCodes = accountantInstitutionCodes;
+
     user.updateDate = new Date();
     user.updateBy = req.user?.username || 'מערכת';
 
     await user.save();
+
 
     res.json({
       message: 'משתמש עודכן בהצלחה',
@@ -656,7 +658,8 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
         email: user.email,
         role: user.role,
         isActive: user.isActive,
-        projectCodes: user.projectCodes
+        projectCodes: user.projectCodes,
+        accountantInstitutionCodes: user.accountantInstitutionCodes
       }
     });
   } catch (error) {

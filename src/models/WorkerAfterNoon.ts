@@ -17,7 +17,6 @@ export interface WorkerAfterNoon extends Document {
   email?: string;
   isActive: boolean;
   notes?: string;
-  roleType: string;
   roleName: string;
   coordinatorId: Types.ObjectId;
   is101: boolean;
@@ -43,7 +42,6 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   email: { type: String },
   isActive: { type: Boolean, default: true },
   notes: { type: String },
-  roleType: { type: String },
   roleName: { type: String },
   coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
   is101: { type: Boolean, default: false },

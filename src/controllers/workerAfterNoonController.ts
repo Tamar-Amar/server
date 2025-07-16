@@ -143,53 +143,13 @@ export const deleteAllWorkers = async (req: Request, res: Response): Promise<voi
 };
 
 export const addMultipleWorkers = async (req: Request, res: Response): Promise<void> => {
-  try {    
-    const workersData = req.body.workers;
-    
-    if (!Array.isArray(workersData)) {
-      console.error('Invalid workers data - not an array:', workersData);
-      res.status(400).json({ error: 'נדרש מערך של עובדים' });
-      return;
-    }    
-
-    const existingWorkers = await WorkerAfterNoon.find({
-      id: { $in: workersData.map(w => w.id) }
-    });
-    
-    const existingIds = new Set(existingWorkers.map(w => w.id));
-    const newWorkers = workersData.filter(w => !existingIds.has(w.id));
-    const duplicateWorkers = workersData.filter(w => existingIds.has(w.id));
-    
-    
-    // Validate each new worker before creating
-    const validatedWorkers = [];
-    for (let i = 0; i < newWorkers.length; i++) {
-      try {
-        const worker = new WorkerAfterNoon(newWorkers[i]);
-        await worker.validate();
-        validatedWorkers.push(worker);
-      } catch (validationError) {
-        console.error(`Validation error for worker ${i}:`, validationError);
-        res.status(400).json({ 
-          error: `שגיאה בעובד מספר ${i + 1}: ${(validationError as Error).message}`,
-          workerIndex: i,
-          workerData: newWorkers[i]
-        });
-        return;
-      }
-    }
-
-    let savedWorkers: any[] = [];
-    if (validatedWorkers.length > 0) {
-      savedWorkers = await WorkerAfterNoon.insertMany(validatedWorkers);
-    }
-
-
-    const allWorkers = [...savedWorkers, ...existingWorkers];
-    res.status(201).json(allWorkers);
+  try {
+    const workers = req.body;
+    const result = await WorkerAfterNoon.insertMany(workers);
+    res.status(201).json(result);
   } catch (err) {
     console.error('Error adding multiple workers:', err);
-    res.status(400).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message });
   }
 };
 
@@ -279,26 +239,8 @@ export const updateBatchWorkers = async (req: Request, res: Response): Promise<v
 export const deleteMultipleWorkers = async (req: Request, res: Response): Promise<void> => {
   try {
     const { workerIds } = req.body;
-    
-    if (!Array.isArray(workerIds)) {
-      res.status(400).json({ error: 'נדרש מערך של מזהה עובדים' });
-      return;
-    }
-
-
-    const updateResult = await Class.updateMany(
-      { 'workers.workerId': { $in: workerIds } },
-      { $pull: { workers: { workerId: { $in: workerIds } } } }
-    );
-
-
-    const deleteResult = await WorkerAfterNoon.deleteMany({ _id: { $in: workerIds } });
-
-    res.status(200).json({ 
-      message: `${deleteResult.deletedCount} עובדים נמחקו בהצלחה`,
-      deletedWorkers: deleteResult.deletedCount,
-      removedFromClasses: updateResult.modifiedCount
-    });
+    const result = await WorkerAfterNoon.deleteMany({ _id: { $in: workerIds } });
+    res.status(200).json(result);
   } catch (err) {
     console.error('Error deleting multiple workers:', err);
     res.status(500).json({ error: (err as Error).message });
@@ -404,6 +346,72 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
     res.status(200).json(workersWithDetails);
   } catch (err) {
     console.error('Error fetching workers by coordinator:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+export const getWorkersByAccountant = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { accountantId } = req.params;
+    
+    // קבלת פרטי חשב השכר
+    const User = require('../models/User').default;
+    const accountant = await User.findById(accountantId);
+    
+    if (!accountant) {
+      res.status(404).json({ error: 'חשב שכר לא נמצא' });
+      return;
+    }
+
+    // אם אין קודי מוסד, החזר מערך ריק
+    if (!accountant.accountantInstitutionCodes || accountant.accountantInstitutionCodes.length === 0) {
+      res.status(200).json([]);
+      return;
+    }
+
+    // מציאת כל העובדים של קודי המוסד של חשב השכר
+    const workers = await WorkerAfterNoon.find({
+      isActive: true
+    }).sort({ lastName: 1, firstName: 1 });
+
+    // סינון עובדים לפי קודי המוסד של חשב השכר
+    const filteredWorkers = workers.filter(worker => {
+      // בדיקה אם העובד שייך לאחד מקודי המוסד של חשב השכר
+      return accountant.accountantInstitutionCodes.includes(worker.accountantCode);
+    });
+
+    // קבלת מספר הטפסים לכל עובד
+    const Document = require('../models/Document').default;
+    const workerIds = filteredWorkers.map(w => w._id);
+    const documentsCounts = await Document.aggregate([
+      {
+        $match: {
+          operatorId: { $in: workerIds }
+        }
+      },
+      {
+        $group: {
+          _id: '$operatorId',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // יצירת מפה של מספר טפסים לכל עובד
+    const documentsMap = new Map();
+    documentsCounts.forEach((doc: any) => {
+      documentsMap.set(doc._id.toString(), doc.count);
+    });
+
+    // הוספת מספר הטפסים לכל עובד
+    const workersWithDetails = filteredWorkers.map(worker => ({
+      ...worker.toObject(),
+      documentsCount: documentsMap.get((worker._id as any).toString()) || 0
+    }));
+
+    res.status(200).json(workersWithDetails);
+  } catch (err) {
+    console.error('Error fetching workers by accountant:', err);
     res.status(500).json({ error: (err as Error).message });
   }
 };
