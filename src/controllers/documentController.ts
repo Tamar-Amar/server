@@ -169,7 +169,8 @@ export const getAllPersonalDocuments: RequestHandler = async (req, res, next) =>
       "אישור משטרה",
       "תעודת השכלה",
       'חוזה',
-      'תעודת זהות'
+      'תעודת זהות',
+      'אישור וותק'
     ];
     const documents: Document[] = await DocumentModel.find({ tag: { $in: personalDocTags } }).lean();
     for (const doc of documents as any[]) {

@@ -18,7 +18,6 @@ export interface WorkerAfterNoon extends Document {
   isActive: boolean;
   notes?: string;
   roleName: string;
-  coordinatorId: Types.ObjectId;
   is101: boolean;
   lastLogin?: Date;
   
@@ -29,7 +28,6 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   id: { type: String, unique: true },
-  accountantCode: { type: String },
   modelCode: { type: String },
   projectCodes: { type: [Number] },
   createDate: { type: Date, default: Date.now },
@@ -43,7 +41,6 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   isActive: { type: Boolean, default: true },
   notes: { type: String },
   roleName: { type: String },
-  coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
   is101: { type: Boolean, default: false },
   lastLogin: { type: Date },
 }, {

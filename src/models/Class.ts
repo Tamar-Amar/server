@@ -21,8 +21,8 @@ export interface ClassDocument extends Document {
   description: string;
   workers: Array<{
     workerId: Types.ObjectId;
+    roleType: string;
     project: number;
-    roleName: string;
   }>;
   institutionName: string;
   institutionCode: string;
@@ -51,8 +51,8 @@ const ClassSchema: Schema = new Schema({
   description: { type: String, required: false },  
   workers: [{
     workerId: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon' },
-    roleName: { type: String, required: false },
-    project: { type: Number },
+    roleType: { type: String },
+    project: { type: Number }
   }],
   coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
 });
