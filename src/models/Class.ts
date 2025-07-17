@@ -65,6 +65,28 @@ ClassSchema.pre('save', function (next) {
   } else if (this.type === 'גן') {
     this.monthlyBudget = 200;
   }
+  
+  // נרמול התפקידים של העובדים
+  if (this.workers && Array.isArray(this.workers)) {
+    this.workers.forEach(worker => {
+      if (worker.roleType) {
+        worker.roleType = worker.roleType.trim().replace(/\s+/g, ' ');
+      }
+    });
+  }
+  
+  next();
+});
+
+ClassSchema.pre('findOneAndUpdate', function(next) {
+  const update = this.getUpdate() as any;
+  if (update && update.workers && Array.isArray(update.workers)) {
+    update.workers.forEach((worker: any) => {
+      if (worker.roleType) {
+        worker.roleType = worker.roleType.trim().replace(/\s+/g, ' ');
+      }
+    });
+  }
   next();
 });
 

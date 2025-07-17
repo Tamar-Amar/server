@@ -48,6 +48,22 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   toObject: { getters: true }
 });
 
+// Middleware לנרמול התפקיד לפני שמירה
+WorkerAfterNoonSchema.pre('save', function(next) {
+  if (typeof this.roleName === 'string') {
+    this.roleName = this.roleName.trim().replace(/\s+/g, ' ');
+  }
+  next();
+});
+
+WorkerAfterNoonSchema.pre('findOneAndUpdate', function(next) {
+  const update = this.getUpdate() as any;
+  if (update && typeof update.roleName === 'string') {
+    update.roleName = update.roleName.trim().replace(/\s+/g, ' ');
+  }
+  next();
+});
+
 WorkerAfterNoonSchema.index({ id: 1 });
 WorkerAfterNoonSchema.index({ firstName: 1, lastName: 1 });
 
