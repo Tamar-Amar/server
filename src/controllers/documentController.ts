@@ -5,7 +5,7 @@ import { Types } from 'mongoose';
 
 
 interface RequestWithUser extends Request {
-  user?: { id: string; role: string; idNumber?: string };
+  user?: { id: string; role: string; idNumber?: string; username?: string };
   file?: Express.Multer.File;
 }
 
@@ -29,6 +29,12 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
       return;
     }
 
+    // בדיקה נוספת ש-documentType לא undefined או ריק
+    if (!documentType || documentType === 'undefined' || documentType.trim() === '') {
+      res.status(400).json({ error: 'סוג מסמך לא תקין או חסר' });
+      return;
+    }
+
     try {
       const operatorId = new Types.ObjectId(workerId);
       const newFileName = generateFileName(tz, documentType);
@@ -43,7 +49,7 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
         expiryDate,
         uploadedAt: new Date(),
         uploadedBy: req.user?.id || 'system',
-        tag: documentType,
+        tag: documentType.trim(), // וודא שהתג מנורמל
         status: DocumentStatus.PENDING,
         comments: ''
       });
@@ -183,6 +189,175 @@ export const getAllPersonalDocuments: RequestHandler = async (req, res, next) =>
     
     res.status(200).json(documents);
   } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
+  }
+};
+
+export const getCoordinatorWorkerDocuments: RequestHandler = async (req: RequestWithUser, res, next) => {
+  try {
+    const { coordinatorId } = req.params;
+    
+    // בדיקה שהמשתמש הוא רכז או מנהל
+    if (req.user?.role !== 'coordinator' && req.user?.role !== 'admin' && req.user?.role !== 'project_manager' && req.user?.role !== 'accountant') {
+      res.status(403).json({ error: 'אין לך הרשאה לגשת למסמכים אלה' });
+      return;
+    }
+
+    // אם המשתמש הוא רכז, וודא שהוא מנסה לגשת למסמכים של העובדים שלו
+    if (req.user?.role === 'coordinator' && req.user?.id !== coordinatorId) {
+      res.status(403).json({ error: 'אין לך הרשאה לגשת למסמכים של רכז אחר' });
+      return;
+    }
+
+    const personalDocTags = [
+      "אישור משטרה",
+      "תעודת השכלה",
+      'חוזה',
+      'תעודת זהות',
+      'אישור וותק'
+    ];
+
+    // קבלת פרטי הרכז
+    const User = require('../models/User').default;
+    const coordinator = await User.findById(coordinatorId);
+    
+    if (!coordinator) {
+      res.status(404).json({ error: 'רכז לא נמצא' });
+      return;
+    }
+
+    // אם אין שיוכי פרויקטים, החזר מערך ריק
+    if (!coordinator.projectCodes || coordinator.projectCodes.length === 0) {
+      res.status(200).json([]);
+      return;
+    }
+
+    // יצירת רשימת קודי מוסד של הרכז
+    const coordinatorInstitutionCodes = coordinator.projectCodes.map((pc: any) => pc.institutionCode);
+    
+    // מציאת כל הכיתות של קודי המוסד של הרכז
+    const Class = require('../models/Class').default;
+    const classes = await Class.find({
+      institutionCode: { $in: coordinatorInstitutionCodes }
+    });
+
+    // יצירת רשימת עובדים עם פרטי הכיתה
+    const workersWithClassInfo: any[] = [];
+    classes.forEach((cls: any) => {
+      if (cls.workers) {
+        cls.workers.forEach((worker: any) => {
+          // בדיקה שהעובד שייך לפרויקט שהרכז אחראי עליו
+          const coordinatorProjectCodes = coordinator.projectCodes
+            .filter((pc: any) => pc.institutionCode === cls.institutionCode)
+            .map((pc: any) => pc.projectCode);
+          
+          if (coordinatorProjectCodes.includes(worker.project)) {
+            workersWithClassInfo.push({
+              workerId: worker.workerId,
+              classSymbol: cls.uniqueSymbol,
+              className: cls.name,
+              project: worker.project,
+              roleType: worker.roleType
+            });
+          }
+        });
+      }
+    });
+
+    // קבלת פרטי העובדים
+    const workerIds = workersWithClassInfo.map(w => w.workerId);
+    const WorkerAfterNoonModel = require('../models/WorkerAfterNoon').default;
+    const workers = await WorkerAfterNoonModel.find({
+      _id: { $in: workerIds },
+      isActive: true
+    }).sort({ lastName: 1, firstName: 1 });
+
+    if (!workers || workers.length === 0) {
+      res.status(200).json([]);
+      return;
+    }
+
+    const activeWorkerIds = workers.map((worker: any) => worker._id);
+
+    // קבלת כל המסמכים האישיים של העובדים
+    const documents: Document[] = await DocumentModel.find({ 
+      operatorId: { $in: activeWorkerIds },
+      tag: { $in: personalDocTags }
+    }).lean();
+
+    // הוספת URLs למסמכים
+    for (const doc of documents as any[]) {
+      if (doc.s3Key) {
+        doc.url = await getSignedUrl(doc.s3Key as string);
+      }
+      doc.createdAt = doc.uploadedAt; // מיפוי uploadedAt ל-createdAt
+      doc.updatedAt = doc.uploadedAt;  // מיפוי uploadedAt ל-updatedAt
+    }
+    
+    res.status(200).json(documents);
+  } catch (err: unknown) {
+    console.error('Error in getCoordinatorWorkerDocuments:', err);
+    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+    res.status(500).json({ error });
+  }
+};
+
+export const cleanupUndefinedTags: RequestHandler = async (req: RequestWithUser, res, next) => {
+  try {
+    // בדיקה שהמשתמש הוא מנהל
+    if (req.user?.role !== 'admin' && req.user?.role !== 'project_manager') {
+      res.status(403).json({ error: 'אין לך הרשאה לבצע פעולה זו' });
+      return;
+    }
+
+    // מצא מסמכים עם תג undefined או ריק
+    const documentsToDelete = await DocumentModel.find({
+      $or: [
+        { tag: { $exists: false } },
+        { tag: null },
+        { tag: 'undefined' },
+        { tag: '' },
+        { tag: { $regex: /^\s*$/ } } // תגים עם רווחים בלבד
+      ]
+    });
+
+    if (documentsToDelete.length === 0) {
+      res.json({ message: 'אין מסמכים עם תג undefined לניקוי', count: 0 });
+      return;
+    }
+
+    // מחק את המסמכים מ-S3
+    for (const doc of documentsToDelete) {
+      try {
+        await deleteFileFromS3(doc.s3Key as string);
+      } catch (error) {
+        console.error(`Error deleting file from S3: ${doc.s3Key}`, error);
+      }
+    }
+
+    // מחק את המסמכים מהמסד נתונים
+    const deleteResult = await DocumentModel.deleteMany({
+      $or: [
+        { tag: { $exists: false } },
+        { tag: null },
+        { tag: 'undefined' },
+        { tag: '' },
+        { tag: { $regex: /^\s*$/ } }
+      ]
+    });
+
+    res.json({ 
+      message: `נוקו ${deleteResult.deletedCount} מסמכים עם תג undefined`,
+      count: deleteResult.deletedCount,
+      deletedDocuments: documentsToDelete.map(doc => ({
+        id: doc._id,
+        fileName: doc.fileName,
+        tag: doc.tag
+      }))
+    });
+  } catch (err: unknown) {
+    console.error('Error in cleanupUndefinedTags:', err);
     const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
     res.status(500).json({ error });
   }

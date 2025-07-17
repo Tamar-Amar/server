@@ -8,6 +8,11 @@ export const addWorker = async (req: Request, res: Response): Promise<void> => {
   try {
     const workerData = req.body;
 
+    // נרמול התפקיד אם קיים
+    if (workerData.roleName) {
+      workerData.roleName = workerData.roleName.trim().replace(/\s+/g, ' ');
+    }
+
     const worker = new WorkerAfterNoon(workerData);
     const savedWorker = await worker.save();
 
@@ -64,6 +69,11 @@ export const updateWorker = async (req: Request, res: Response): Promise<void> =
     const workerId = req.params.id;
     const updatedData = req.body;
     updatedData.updateDate = new Date();
+
+    // נרמול התפקיד אם קיים
+    if (updatedData.roleName) {
+      updatedData.roleName = updatedData.roleName.trim().replace(/\s+/g, ' ');
+    }
 
     const updatedWorker = await WorkerAfterNoon.findByIdAndUpdate(
       workerId,
@@ -145,7 +155,16 @@ export const deleteAllWorkers = async (req: Request, res: Response): Promise<voi
 export const addMultipleWorkers = async (req: Request, res: Response): Promise<void> => {
   try {
     const workers = req.body;
-    const result = await WorkerAfterNoon.insertMany(workers);
+    
+    // נרמול התפקידים לכל העובדים
+    const normalizedWorkers = workers.map((worker: any) => {
+      if (worker.roleName) {
+        worker.roleName = worker.roleName.trim().replace(/\s+/g, ' ');
+      }
+      return worker;
+    });
+    
+    const result = await WorkerAfterNoon.insertMany(normalizedWorkers);
     res.status(201).json(result);
   } catch (err) {
     console.error('Error adding multiple workers:', err);
@@ -214,6 +233,11 @@ export const updateBatchWorkers = async (req: Request, res: Response): Promise<v
             failed.push({ id, error: 'קודי פרויקט חייבים להיות מערך' });
             continue;
           }
+        }
+        
+        // נרמול התפקיד אם זה השדה שמתעדכן
+        if (field === 'roleName' && typeof newValue === 'string') {
+          valueToSet = newValue.trim().replace(/\s+/g, ' ');
         }
         
         // עדכן את השדה
@@ -333,14 +357,38 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
     // שילוב פרטי העובדים עם פרטי הכיתה ומספר הטפסים
     const workersWithDetails = workers.map(worker => {
       const classInfo = workersWithClassInfo.find(w => w.workerId.toString() === (worker._id as any).toString());
+      // מציאת הכיתה כדי לקבל את קוד המוסד
+      const workerClass = classes.find(cls => cls.uniqueSymbol === classInfo?.classSymbol);
+      
+      // נרמול התפקיד - עדיפות ל-roleName של העובד, אם לא קיים אז roleType מהכיתה
+      let normalizedRoleName = worker.roleName;
+      if (!normalizedRoleName && classInfo?.roleType) {
+        normalizedRoleName = classInfo.roleType;
+      }
+      // נרמול התפקיד - הסרת רווחים מיותרים
+      if (normalizedRoleName) {
+        normalizedRoleName = normalizedRoleName.trim().replace(/\s+/g, ' ');
+      }
+      
       return {
         ...worker.toObject(),
         classSymbol: classInfo?.classSymbol || '',
         className: classInfo?.className || '',
         project: classInfo?.project || null,
         roleType: classInfo?.roleType || '',
+        roleName: normalizedRoleName || '', // עדכון roleName מנורמל
+        institutionCode: workerClass?.institutionCode || '',
         documentsCount: documentsMap.get((worker._id as any).toString()) || 0
       };
+    });
+
+    // מיון לפי שם משפחה ואז שם פרטי
+    workersWithDetails.sort((a, b) => {
+      const lastNameComparison = (a.lastName || '').localeCompare(b.lastName || '', 'he');
+      if (lastNameComparison !== 0) {
+        return lastNameComparison;
+      }
+      return (a.firstName || '').localeCompare(b.firstName || '', 'he');
     });
 
     res.status(200).json(workersWithDetails);
