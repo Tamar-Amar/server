@@ -7,7 +7,7 @@ export interface MonthlyAttendanceDocument extends Document {
   projectCode: number;
   studentAttendanceDoc?: Types.ObjectId; // Reference to student attendance document
   workerAttendanceDoc?: Types.ObjectId; // Reference to worker attendance document
-  controlDoc?: Types.ObjectId; // Optional reference to control document
+  controlDocs?: Types.ObjectId[]; // Up to 5 control documents
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,7 +19,7 @@ const MonthlyAttendanceSchema: Schema = new Schema({
   projectCode: { type: Number, required: true },
   studentAttendanceDoc: { type: Schema.Types.ObjectId, ref: 'Document' },
   workerAttendanceDoc: { type: Schema.Types.ObjectId, ref: 'Document' },
-  controlDoc: { type: Schema.Types.ObjectId, ref: 'Document' },
+  controlDocs: [{ type: Schema.Types.ObjectId, ref: 'Document' }], // מערך של דוחות בקרה
 }, {
   timestamps: true
 });

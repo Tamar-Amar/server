@@ -998,7 +998,7 @@ export const impersonateUser = async (req: AuthenticatedRequest, res: Response) 
   try {
     // נשתמש ב-casting כדי לקבל את user
     const user = req.user;
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'manager_project')) {
       res.status(403).json({ message: 'גישה אסורה' });
       return;
     }

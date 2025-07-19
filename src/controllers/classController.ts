@@ -386,3 +386,40 @@ export const bulkAddWorkersToClasses = async (req: Request, res: Response): Prom
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+export const getClassesByCoordinatorInstitutionCodes = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { coordinatorId } = req.params;
+    
+    // קבלת פרטי הרכז
+    const User = require('../models/User').default;
+    const coordinator = await User.findById(coordinatorId);
+    
+    if (!coordinator) {
+      res.status(404).json({ error: 'רכז לא נמצא' });
+      return;
+    }
+
+    // אם אין שיוכי פרויקטים, החזר מערך ריק
+    if (!coordinator.projectCodes || coordinator.projectCodes.length === 0) {
+      res.status(200).json([]);
+      return;
+    }
+
+    // יצירת רשימת קודי מוסד של הרכז
+    const coordinatorInstitutionCodes = coordinator.projectCodes.map((pc: any) => pc.institutionCode);
+    
+    // מציאת כל הכיתות של קודי המוסד של הרכז עם פרטי העובדים
+    const classes = await Class.find({
+      institutionCode: { $in: coordinatorInstitutionCodes },
+      isActive: true
+    })
+    .populate('workers.workerId', 'firstName lastName id roleName')
+    .sort({ uniqueSymbol: 1 });
+    
+    res.status(200).json(classes);
+  } catch (err) {
+    console.error('getClassesByCoordinatorInstitutionCodes - Error:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};

@@ -58,10 +58,15 @@ export const deleteFileFromS3 = async (key: string): Promise<void> => {
 
 
 export const getSignedUrl = async (key: string): Promise<string> => {
-  const command = new GetObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: key
-  });
+  try {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key
+    });
 
-  return getSignedUrlAWS(s3Client, command, { expiresIn: 86400 });
+    return await getSignedUrlAWS(s3Client, command, { expiresIn: 86400 });
+  } catch (error) {
+    console.error('Error getting signed URL for key:', key, error);
+    throw new Error(`Failed to get signed URL for key: ${key}`);
+  }
 };
