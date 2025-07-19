@@ -7,7 +7,8 @@ import {
     updateClass,
     updateMultipleClasses,
     getClassesByCoordinator,
-    bulkAddWorkersToClasses
+    bulkAddWorkersToClasses,
+    getClassesByCoordinatorInstitutionCodes
 } from '../controllers/classController';
 import { authenticateToken } from '../middleware/authHandler';
 
@@ -21,6 +22,7 @@ router.delete('/:id', deleteClass);
 router.get('/', getAllClasses);
 router.put('/:id', updateClass);
 router.get('/coordinator/:coordinatorId', authenticateToken, getClassesByCoordinator);
+router.get('/coordinator-institution-codes/:coordinatorId', getClassesByCoordinatorInstitutionCodes);
 
 
 export default router;

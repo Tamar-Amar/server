@@ -42,7 +42,6 @@ async function deleteFileFromS3(s3Key) {
     };
     
     await s3.deleteObject(params).promise();
-    console.log(`נמחק מ-S3: ${s3Key}`);
     return true;
   } catch (error) {
     console.error(`שגיאה במחיקת קובץ מ-S3: ${s3Key}`, error.message);
@@ -52,7 +51,6 @@ async function deleteFileFromS3(s3Key) {
 
 async function cleanupUndefinedTags() {
   try {
-    console.log('מתחיל ניקוי מסמכים עם תג undefined...');
     
     // מצא מסמכים עם תג undefined או ריק
     const documentsToDelete = await Document.find({
@@ -65,21 +63,12 @@ async function cleanupUndefinedTags() {
       ]
     });
 
-    console.log(`נמצאו ${documentsToDelete.length} מסמכים עם תג undefined`);
 
     if (documentsToDelete.length === 0) {
-      console.log('אין מסמכים עם תג undefined לניקוי');
       return;
     }
 
-    // הצג פרטי המסמכים שיימחקו
-    console.log('\nמסמכים שיימחקו:');
-    documentsToDelete.forEach((doc, index) => {
-      console.log(`${index + 1}. ID: ${doc._id}, File: ${doc.fileName}, Tag: "${doc.tag}", S3 Key: ${doc.s3Key}`);
-    });
-
     // מחק את הקבצים מ-S3
-    console.log('\nמתחיל מחיקת קבצים מ-S3...');
     let s3DeleteSuccess = 0;
     let s3DeleteFailed = 0;
 
@@ -92,10 +81,6 @@ async function cleanupUndefinedTags() {
       }
     }
 
-    console.log(`\nמחיקת S3 הושלמה: ${s3DeleteSuccess} הצליחו, ${s3DeleteFailed} נכשלו`);
-
-    // מחק את המסמכים מהמסד נתונים
-    console.log('\nמתחיל מחיקת רשומות מהמסד נתונים...');
     const deleteResult = await Document.deleteMany({
       $or: [
         { tag: { $exists: false } },
@@ -105,19 +90,11 @@ async function cleanupUndefinedTags() {
         { tag: { $regex: /^\s*$/ } }
       ]
     });
-
-    console.log(`\nניקוי הושלם בהצלחה!`);
-    console.log(`- נמחקו ${deleteResult.deletedCount} רשומות מהמסד נתונים`);
-    console.log(`- נמחקו ${s3DeleteSuccess} קבצים מ-S3`);
-    if (s3DeleteFailed > 0) {
-      console.log(`- ${s3DeleteFailed} קבצים מ-S3 לא נמחקו (ייתכן שכבר לא קיימים)`);
-    }
     
   } catch (error) {
     console.error('שגיאה בניקוי המסמכים:', error);
   } finally {
     mongoose.connection.close();
-    console.log('החיבור למסד הנתונים נסגר');
   }
 }
 

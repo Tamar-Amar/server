@@ -83,7 +83,7 @@ export const validateUserCreation = [
   body('username').trim().isLength({ min: 3 }).withMessage('שם משתמש חייב להיות לפחות 3 תווים'),
   body('password').isLength({ min: 6 }).withMessage('סיסמה חייבת להיות לפחות 6 תווים'),
   body('email').isEmail().withMessage('כתובת אימייל לא תקינה'),
-  body('role').isIn(['system_admin', 'project_manager', 'operator', 'worker', 'payroll', 'coordinator']).withMessage('תפקיד לא תקין'),
+  body('role').isIn(['system_admin', 'manager_project', 'operator', 'worker', 'payroll', 'coordinator']).withMessage('תפקיד לא תקין'),
   validateInput
 ];
 

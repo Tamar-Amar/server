@@ -20,6 +20,11 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
       res.status(400).json({ error: 'לא נבחר קובץ' });
       return;
     }
+    if (!req.body.operatorId || !req.body.tag || !req.body.documentType || !req.body.tz) {
+
+      res.status(400).json({ error: 'חסרים שדות חובה' });
+      return;
+    }
 
     const { workerId, documentType, expiryDate, tz } = req.body;
     const { buffer, mimetype, size } = req.file;
@@ -199,7 +204,7 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
     const { coordinatorId } = req.params;
     
     // בדיקה שהמשתמש הוא רכז או מנהל
-    if (req.user?.role !== 'coordinator' && req.user?.role !== 'admin' && req.user?.role !== 'project_manager' && req.user?.role !== 'accountant') {
+    if (req.user?.role !== 'coordinator' && req.user?.role !== 'admin' && req.user?.role !== 'manager_project' && req.user?.role !== 'accountant') {
       res.status(403).json({ error: 'אין לך הרשאה לגשת למסמכים אלה' });
       return;
     }
@@ -306,7 +311,7 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
 export const cleanupUndefinedTags: RequestHandler = async (req: RequestWithUser, res, next) => {
   try {
     // בדיקה שהמשתמש הוא מנהל
-    if (req.user?.role !== 'admin' && req.user?.role !== 'project_manager') {
+    if (req.user?.role !== 'admin' && req.user?.role !== 'manager_project') {
       res.status(403).json({ error: 'אין לך הרשאה לבצע פעולה זו' });
       return;
     }
