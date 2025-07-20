@@ -29,6 +29,10 @@ import {
 
 dotenv.config();
 const app = express();
+
+// Trust proxy - חשוב ל-Render כדי לזהות נכון כתובות IP
+app.set('trust proxy', 1);
+
 const allowedOrigins = (process.env.ALLOWED_ORIGINS as string).split(',');
 
 // Security middleware - apply first
@@ -55,7 +59,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
+// Rate limiting - אחרי trust proxy
 app.use('/api/', apiRateLimit);
 app.use('/api/', speedLimiter);
 

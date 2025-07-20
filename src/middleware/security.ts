@@ -26,13 +26,21 @@ export const apiRateLimit = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // חשוב ל-Render - לזהות נכון כתובות IP
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  }
 });
 
-// Slow down for repeated requests
+// Slow down for repeated requests - תיקון האזהרה
 export const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 50, // allow 50 requests per 15 minutes, then...
-  delayMs: 500 // begin adding 500ms of delay per request above 50
+  delayMs: () => 500, // begin adding 500ms of delay per request above 50
+  // חשוב ל-Render - לזהות נכון כתובות IP
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  }
 });
 
 // Security headers middleware
