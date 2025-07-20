@@ -30,7 +30,6 @@ import {
 dotenv.config();
 const app = express();
 
-// Trust proxy - חשוב ל-Render כדי לזהות נכון כתובות IP
 app.set('trust proxy', 1);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS as string).split(',');
