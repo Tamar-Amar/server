@@ -15,36 +15,40 @@ const generateFileName = (tz: string, documentType: string): string => {
 };
 
 export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, next) => {
+  console.log('Upload request body:', req.body);
+  console.log('Upload request file:', req.file);
+  
   try {
     if (!req.file) {
+      console.log('No file uploaded');
       res.status(400).json({ error: 'לא נבחר קובץ' });
       return;
     }
-    if (!req.body.operatorId || !req.body.tag || !req.body.documentType || !req.body.tz) {
-
-      res.status(400).json({ error: 'חסרים שדות חובה' });
+    
+    // בדיקה נכונה של השדות שנשלחים מהלקוח
+    if (!req.body.workerId || !req.body.documentType || !req.body.tz) {
+      console.log('Missing required fields:', req.body);
+      res.status(400).json({ error: 'חסרים שדות חובה: workerId, documentType, או tz' });
       return;
     }
 
     const { workerId, documentType, expiryDate, tz } = req.body;
     const { buffer, mimetype, size } = req.file;
 
-    if (!workerId || !documentType) {
-      res.status(400).json({ error: 'חסרים פרטים חובה' });
-      return;
-    }
-
     // בדיקה נוספת ש-documentType לא undefined או ריק
     if (!documentType || documentType === 'undefined' || documentType.trim() === '') {
+      console.log('Invalid document type:', documentType);
       res.status(400).json({ error: 'סוג מסמך לא תקין או חסר' });
       return;
     }
 
     try {
       const operatorId = new Types.ObjectId(workerId);
+      console.log('Operator ID:', operatorId);
       const newFileName = generateFileName(tz, documentType);
+      console.log('New file name:', newFileName);
       const s3Key = await uploadFileToS3(buffer, newFileName, mimetype);
-
+      console.log('S3 key:', s3Key);
       const doc = await DocumentModel.create({
         operatorId,
         fileName: newFileName,
