@@ -62,13 +62,37 @@ export const createCampAttendance: RequestHandler = async (req, res) => {
 // פונקציה חדשה לשליפת דוחות campAttendance
 export const getCampAttendance: RequestHandler = async (req, res) => {
   try {
+    console.log("Starting getCampAttendance...");
+    
     const campAttendances = await CampAttendance.find()
-      .populate('classId')
-      .populate('coordinatorId')
-      .populate('leaderId')
-      .populate('workerAttendanceDoc')
-      .populate('studentAttendanceDoc')
-      .populate('controlDocs');
+      .populate({
+        path: 'classId',
+        select: 'name uniqueSymbol type address street streetNumber projectCodes education gender institutionName institutionCode hasAfternoonCare monthlyBudget childresAmount isActive description'
+      })
+      .populate({
+        path: 'coordinatorId',
+        select: 'firstName lastName username role email phone isActive projectCodes'
+      })
+      .populate({
+        path: 'leaderId',
+        select: 'firstName lastName id accountantCode modelCode projectCodes roleName phone email isActive'
+      })
+      .populate({
+        path: 'workerAttendanceDoc',
+        select: 'fileName fileType s3Key uploadedAt status comments tz type'
+      })
+      .populate({
+        path: 'studentAttendanceDoc',
+        select: 'fileName fileType s3Key uploadedAt status comments tz type'
+      })
+      .populate({
+        path: 'controlDocs',
+        select: 'fileName fileType s3Key uploadedAt status comments tz type'
+      });
+    
+    console.log("Found", campAttendances.length, "records");
+    console.log("First record raw:", campAttendances[0]);
+    console.log("First record workerAttendanceDoc raw:", campAttendances[0]?.workerAttendanceDoc);
     
     // הוספת URL חתום לכל מסמך
     const campAttendancesWithUrls = await Promise.all(
@@ -92,11 +116,14 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
         recordObj.workerAttendanceDoc = await addUrlToDoc(recordObj.workerAttendanceDoc);
         recordObj.studentAttendanceDoc = await addUrlToDoc(recordObj.studentAttendanceDoc);
         recordObj.controlDocs = await Promise.all(recordObj.controlDocs?.map(addUrlToDoc) || []);
+
+        console.log("recordObj",recordObj);
         
         return recordObj;
       })
     );
     
+    console.log("Sending response with", campAttendancesWithUrls.length, "records");
     res.status(200).json(campAttendancesWithUrls);
     return;
   } catch (err: any) {

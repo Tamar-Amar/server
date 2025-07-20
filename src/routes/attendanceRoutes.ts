@@ -374,4 +374,37 @@ router.post('/camp-with-files', authenticateToken, upload.fields([
   { name: 'controlFiles', maxCount: 5 }
 ]), createCampAttendanceWithFiles);
 
+// נתיב לעדכון סטטוס מסמך נוכחות קייטנה
+router.patch('/camp/document-status', authenticateToken, async (req, res) => {
+  try {
+    const { documentId, newStatus } = req.body;
+
+    if (!documentId || !newStatus) {
+      res.status(400).json({ error: 'חסרים שדות חובה' });
+      return;
+    }
+
+    // עדכון הסטטוס במסמך
+    const updatedDoc = await AttendanceDocument.findByIdAndUpdate(
+      documentId,
+      { status: newStatus },
+      { new: true }
+    );
+
+    if (!updatedDoc) {
+      res.status(404).json({ error: 'מסמך לא נמצא' });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'סטטוס המסמך עודכן בהצלחה',
+      document: updatedDoc
+    });
+
+  } catch (err: any) {
+    console.error('שגיאה בעדכון סטטוס מסמך:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router; 
