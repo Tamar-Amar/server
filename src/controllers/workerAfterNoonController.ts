@@ -154,7 +154,25 @@ export const deleteAllWorkers = async (req: Request, res: Response): Promise<voi
 
 export const addMultipleWorkers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const workers = req.body;
+    const body = req.body;
+    let workers;
+    
+    // בדיקה אם הנתונים נשלחו כאובייקט עם שדה workers או כמערך ישיר
+    if (body && body.workers && Array.isArray(body.workers)) {
+      workers = body.workers;
+    } else if (Array.isArray(body)) {
+      workers = body;
+    } else {
+      console.error('Invalid request body format:', typeof body, body);
+      res.status(400).json({ error: 'נדרש מערך של עובדים או אובייקט עם שדה workers' });
+      return;
+    }
+    
+    // בדיקה שהמערך לא ריק
+    if (workers.length === 0) {
+      res.status(400).json({ error: 'מערך העובדים ריק' });
+      return;
+    }
     
     // נרמול התפקידים לכל העובדים
     const normalizedWorkers = workers.map((worker: any) => {
