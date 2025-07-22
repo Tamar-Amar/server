@@ -12,6 +12,9 @@ const Document = require('./src/models/Document').default;
 const Class = require('./src/models/Class').default;
 const Operator = require('./src/models/Operator').default;
 const Activity = require('./src/models/Activity').default;
+const AttendanceDocument = require('./src/models/AttendanceDocument').default;
+const CampAttendance = require('./src/models/CampAttendance').default;
+
 
 const BACKUP_BASE_DIR = path.join(__dirname, 'data-backups');
 
@@ -183,6 +186,52 @@ async function backupActivities() {
   }
 }
 
+async function backupAttendanceDocuments() {
+  try {
+    const attendanceDocuments = await AttendanceDocument.find({}).lean();
+    
+    const backupData = {
+      timestamp: new Date().toISOString(),
+      count: attendanceDocuments.length,
+      data: attendanceDocuments
+    };
+    
+    const backupDir = getBackupDir();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `attendance-documents-${timestamp}.json`;
+    const filePath = path.join(backupDir, fileName);
+    
+    fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2));
+    return { fileName, count: attendanceDocuments.length };
+  } catch (error) {
+    console.error('Error in backupAttendanceDocuments:', error.message);
+    return null;
+  }
+}
+
+async function backupCampAttendances() {
+  try {
+    const campAttendances = await CampAttendance.find({}).lean();
+    
+    const backupData = {
+      timestamp: new Date().toISOString(),
+      count: campAttendances.length,
+      data: campAttendances
+    };
+    
+    const backupDir = getBackupDir();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `camp-attendances-${timestamp}.json`;
+    const filePath = path.join(backupDir, fileName);
+    
+    fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2));
+    return { fileName, count: campAttendances.length };
+  } catch (error) {
+    console.error('Error in backupCampAttendances:', error.message);
+    return null;
+  }
+}
+
 async function createCompleteBackup() {
   try {    
     const results = {
@@ -191,7 +240,9 @@ async function createCompleteBackup() {
       classes: await backupClasses(),
       users: await backupUsers(),
       operators: await backupOperators(),
-      activities: await backupActivities()
+      activities: await backupActivities(),
+      attendanceDocuments: await backupAttendanceDocuments(),
+      campAttendances: await backupCampAttendances()
     };
     
     let totalRecords = 0;

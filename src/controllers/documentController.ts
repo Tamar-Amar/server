@@ -185,7 +185,9 @@ export const getAllPersonalDocuments: RequestHandler = async (req, res, next) =>
       "תעודת השכלה",
       'חוזה',
       'תעודת זהות',
-      'אישור וותק'
+      'אישור וותק',
+      'נוכחות קייטנה רכז',
+      'אישור רפואי'
     ];
     const documents: Document[] = await DocumentModel.find({ tag: { $in: personalDocTags } }).lean();
     for (const doc of documents as any[]) {
@@ -224,7 +226,9 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
       "תעודת השכלה",
       'חוזה',
       'תעודת זהות',
-      'אישור וותק'
+      'אישור וותק',
+      'נוכחות קייטנה רכז',
+      'אישור רפואי'
     ];
 
     // קבלת פרטי הרכז
