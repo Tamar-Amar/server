@@ -414,4 +414,25 @@ router.post('/camp-with-files', authenticateToken, upload.fields([
   { name: 'controlFiles', maxCount: 5 }
 ]), createCampAttendanceWithFiles);
 
+// עדכון סטטוס של מסמך נוכחות
+router.patch('/attendance-document/:id/status', authenticateToken, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const doc = await AttendanceDocument.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!doc) {
+      res.status(404).json({ error: 'לא נמצא מסמך' });
+      return;
+    }
+    res.json(doc);
+    return;
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+    return;
+  }
+});
+
 export default router; 
