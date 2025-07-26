@@ -73,7 +73,7 @@ const getWorkerAttendance: RequestHandler = async (req, res) => {
         const recordObj = record.toObject();
 
         const addUrlToDoc = async (doc: any) => {
-          if (doc && doc.s3Key) {
+          if (doc && doc.s3Key && doc.status === 'ממתין') {
             return { ...doc, url: await getSignedUrl(doc.s3Key) };
           }
           return doc;
@@ -147,7 +147,7 @@ const getAllAttendance: RequestHandler = async (req, res) => {
                 const recordObj = record.toObject();
 
                 const addUrlToDoc = async (doc: any) => {
-                  if (doc && doc.s3Key) {
+                  if (doc && doc.s3Key && doc.status === 'ממתין') {
                     return { ...doc, url: await getSignedUrl(doc.s3Key) };
                   }
                   return doc;
@@ -379,7 +379,7 @@ router.get('/camp/class/:classId', async (req, res) => {
         const recordObj = record.toObject();
 
         const addUrlToDoc = async (doc: any) => {
-          if (doc && doc.s3Key) {
+          if (doc && doc.s3Key && doc.status === 'ממתין') {
             return { ...doc, url: await getSignedUrl(doc.s3Key) };
           }
           return doc;
@@ -432,6 +432,31 @@ router.patch('/attendance-document/:id/status', authenticateToken, async (req, r
   } catch (e: any) {
     res.status(500).json({ error: e.message });
     return;
+  }
+});
+
+// יצירת URL למסמך ספציפי
+router.get('/document/:id/url', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const doc = await AttendanceDocument.findById(id);
+    if (!doc) {
+      res.status(404).json({ error: 'מסמך לא נמצא' });
+      return;
+    }
+
+    if (!doc.s3Key) {
+      res.status(400).json({ error: 'אין מפתח S3 למסמך' });
+      return;
+    }
+
+    const url = await getSignedUrl(doc.s3Key);
+    res.json({ url });
+    
+  } catch (error) {
+    console.error('שגיאה ביצירת URL למסמך:', error);
+    res.status(500).json({ error: 'שגיאה ביצירת URL' });
   }
 });
 

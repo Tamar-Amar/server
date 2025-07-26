@@ -70,9 +70,9 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
       campAttendances.map(async (record) => {
         const recordObj = record.toObject();
         
-        // פונקציה עזר להוספת URL למסמך
+        // פונקציה עזר להוספת URL למסמך - רק למסמכים במצב "ממתין"
         const addUrlToDoc = async (doc: any) => {
-          if (doc && doc.s3Key) {
+          if (doc && doc.s3Key && doc.status === 'ממתין') {
             try {
               const url = await getSignedUrl(doc.s3Key);
               return { ...doc, url };

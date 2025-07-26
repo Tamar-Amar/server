@@ -106,17 +106,17 @@ export const getCampAttendanceByCoordinator = async (req: Request, res: Response
     .lean();
 
 
-    // הוספת URLs למסמכים
+    // הוספת URLs למסמכים - רק למסמכים במצב "ממתין"
     for (const record of attendanceRecords) {
-      if (record.workerAttendanceDoc && record.workerAttendanceDoc.s3Key) {
+      if (record.workerAttendanceDoc && record.workerAttendanceDoc.s3Key && record.workerAttendanceDoc.status === 'ממתין') {
         record.workerAttendanceDoc.url = await getSignedUrl(record.workerAttendanceDoc.s3Key);
       }
-      if (record.studentAttendanceDoc && record.studentAttendanceDoc.s3Key) {
+      if (record.studentAttendanceDoc && record.studentAttendanceDoc.s3Key && record.studentAttendanceDoc.status === 'ממתין') {
         record.studentAttendanceDoc.url = await getSignedUrl(record.studentAttendanceDoc.s3Key);
       }
       if (record.controlDocs && record.controlDocs.length > 0) {
         for (const doc of record.controlDocs) {
-          if (doc.s3Key) {
+          if (doc.s3Key && doc.status === 'ממתין') {
             doc.url = await getSignedUrl(doc.s3Key);
           }
         }
