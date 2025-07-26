@@ -8,7 +8,9 @@ import {
   getWorkersByCoordinator,
   getWorkersByAccountant,
   validateWorkersExist,
+  getWorkersForGeneralUpdate,
   updateBatchWorkers,
+  updateGeneralWorkers,
   deleteAllWorkers,
   addMultipleWorkers,
   deleteMultipleWorkers
@@ -22,7 +24,9 @@ router.post('/', addWorker);
 router.post('/multiple', addMultipleWorkers);
 router.post('/delete-multiple', deleteMultipleWorkers);
 router.post('/update-batch', updateBatchWorkers);
+router.post('/update-general', updateGeneralWorkers);
 router.post('/validate-exist', validateWorkersExist);
+router.post('/get-for-general-update', getWorkersForGeneralUpdate);
 router.get('/', getWorkers);
 router.get('/:id', getWorkerById);
 router.put('/:id', updateWorker);
