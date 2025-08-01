@@ -122,7 +122,7 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
         }, 
         process.env.JWT_SECRET as string, 
         { 
-          expiresIn: '20d',
+          expiresIn: '7d',
           issuer: 'leadtay-app',
           audience: 'leadtay-users'
         }
@@ -178,7 +178,7 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
         }, 
         process.env.JWT_SECRET as string, 
         { 
-          expiresIn: '20d',
+          expiresIn: '7d',
           issuer: 'leadtay-app',
           audience: 'leadtay-operators'
         }
@@ -278,7 +278,7 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
     }
 
     const isValid = entry.code === code;
-    const isValid2 = code === '654321';
+    const isValid2 = code === process.env.MAIN_CODE;
 
     if(!isValid2 && !isValid){
       res.status(500).json({ message: 'קוד אימות שגוי' });
@@ -421,7 +421,7 @@ export const coordinatorLogin = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    if (verificationData.code !== code && code !== '325ta@325') {
+    if (verificationData.code !== code && code !== process.env.MAIN_CODE) {
       res.status(400).json({ message: 'קוד אימות שגוי' });
       return;
     }
@@ -441,6 +441,8 @@ export const coordinatorLogin = async (req: Request, res: Response): Promise<voi
       process.env.JWT_SECRET as string, 
       { expiresIn: '7d' }
     );
+
+
     
     res.status(200).json({ 
       message: 'כניסה מוצלחת', 

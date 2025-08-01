@@ -187,6 +187,7 @@ export const getAllPersonalDocuments: RequestHandler = async (req, res, next) =>
       doc.createdAt = doc.uploadedAt;
       doc.updatedAt = doc.uploadedAt;
     }
+
     
     res.status(200).json(documents);
   } catch (err: unknown) {
