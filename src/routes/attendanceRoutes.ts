@@ -403,18 +403,7 @@ router.get('/camp/class/:classId', async (req, res) => {
 router.get('/:workerId', getWorkerAttendance);
 router.get('/:classId', getClassAttendance);
 router.delete('/:id', deleteAttendanceRecord);
-router.patch('/update-attendance/:id', updateAttendanceAttendanceDoc);
-router.patch('/update-after-doc-delete', updateAttendanceAfterDocDelete);
-router.post('/upload-attendance-doc', upload.single('file'), uploadAttendanceDocument);
-router.post('/camp', createCampAttendance);
-router.patch('/camp/:id', updateCampAttendanceDoc);
-router.post('/camp-with-files', authenticateToken, upload.fields([
-  { name: 'workerFile', maxCount: 1 },
-  { name: 'studentFile', maxCount: 1 },
-  { name: 'controlFiles', maxCount: 5 }
-]), createCampAttendanceWithFiles);
 
-// עדכון סטטוס של מסמך נוכחות
 router.patch('/attendance-document/:id/status', authenticateToken, async (req, res) => {
   try {
     const { status } = req.body;
@@ -430,10 +419,24 @@ router.patch('/attendance-document/:id/status', authenticateToken, async (req, r
     res.json(doc);
     return;
   } catch (e: any) {
+    console.error("Error updating document:", e);
     res.status(500).json({ error: e.message });
     return;
   }
 });
+router.patch('/update-attendance/:id', updateAttendanceAttendanceDoc);
+router.patch('/update-after-doc-delete', updateAttendanceAfterDocDelete);
+router.post('/upload-attendance-doc', upload.single('file'), uploadAttendanceDocument);
+router.post('/camp', createCampAttendance);
+router.patch('/camp/:id', updateCampAttendanceDoc);
+router.post('/camp-with-files', authenticateToken, upload.fields([
+  { name: 'workerFile', maxCount: 1 },
+  { name: 'studentFile', maxCount: 1 },
+  { name: 'controlFiles', maxCount: 5 }
+]), createCampAttendanceWithFiles);
+
+// עדכון סטטוס של מסמך נוכחות
+
 
 // יצירת URL למסמך ספציפי
 router.get('/document/:id/url', authenticateToken, async (req, res) => {
