@@ -318,7 +318,7 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
               classSymbol: cls.uniqueSymbol,
               className: cls.name,
               project: worker.project,
-              roleType: worker.roleType
+              roleName: worker.roleName
             });
           }
         });
@@ -362,8 +362,8 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
       
       // נרמול התפקיד - עדיפות ל-roleName של העובד, אם לא קיים אז roleType מהכיתה
       let normalizedRoleName = worker.roleName;
-      if (!normalizedRoleName && classInfo?.roleType) {
-        normalizedRoleName = classInfo.roleType;
+      if (!normalizedRoleName && classInfo?.roleName) {
+        normalizedRoleName = classInfo.roleName;
       }
       // נרמול התפקיד - הסרת רווחים מיותרים
       if (normalizedRoleName) {
@@ -375,8 +375,7 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
         classSymbol: classInfo?.classSymbol || '',
         className: classInfo?.className || '',
         project: classInfo?.project || null,
-        roleType: classInfo?.roleType || '',
-        roleName: normalizedRoleName || '', // עדכון roleName מנורמל
+        roleName: normalizedRoleName || '',
         institutionCode: workerClass?.institutionCode || '',
         documentsCount: documentsMap.get((worker._id as any).toString()) || 0
       };
@@ -460,6 +459,181 @@ export const getWorkersByAccountant = async (req: Request, res: Response): Promi
     res.status(200).json(workersWithDetails);
   } catch (err) {
     console.error('Error fetching workers by accountant:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+export const updateGeneralWorkers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { projectCode, updates } = req.body;
+    
+    if (!projectCode || !Array.isArray(updates)) {
+      res.status(400).json({ error: 'נדרש קוד פרויקט ומערך עדכונים' });
+      return;
+    }
+
+    const success: Array<{ id: string; changes: string[] }> = [];
+    const failed: Array<{ id: string; error: string }> = [];
+
+    for (const update of updates) {
+      try {
+        const { id, firstName, lastName, phone, email, roleName, classSymbol } = update;
+        
+        
+        const worker = await WorkerAfterNoon.findOne({ id: id });
+        
+        if (!worker) {
+          failed.push({ id, error: 'העובד לא נמצא' });
+          continue;
+        }
+
+        
+        const Class = require('../models/Class').default;
+        const workerClasses = await Class.find({
+          'workers.workerId': worker._id,
+          'workers.project': projectCode
+        });
+
+        if (workerClasses.length === 0) {
+          failed.push({ id, error: 'העובד לא מופיע בפרויקט קייטנת קיץ' });
+          continue;
+        }
+
+        const changes: string[] = [];
+        const updateData: any = {};
+
+        
+        if (firstName && firstName !== worker.firstName) {
+          updateData.firstName = firstName;
+          changes.push('שם פרטי');
+        }
+        if (lastName && lastName !== worker.lastName) {
+          updateData.lastName = lastName;
+          changes.push('שם משפחה');
+        }
+        if (phone && phone !== worker.phone) {
+          updateData.phone = phone;
+          changes.push('טלפון');
+        }
+        if (email && email !== worker.email) {
+          updateData.email = email;
+          changes.push('אימייל');
+        }
+        if (roleName && roleName !== worker.roleName) {
+          updateData.roleName = roleName.trim().replace(/\s+/g, ' ');
+          changes.push('תפקיד');
+        }
+
+        
+        if (classSymbol) {
+          
+          const newClass = await Class.findOne({ uniqueSymbol: classSymbol });
+          
+          if (!newClass) {
+            failed.push({ id, error: `כיתה עם סמל ${classSymbol} לא נמצאה` });
+            continue;
+          }
+
+          
+          const workerInNewClass = newClass.workers.find((w: any) => 
+            w.workerId.toString() === (worker._id as any).toString() && w.project === projectCode
+          );
+
+          if (!workerInNewClass) {
+            
+            for (const oldClass of workerClasses) {
+              oldClass.workers = oldClass.workers.filter((w: any) => 
+                !(w.workerId.toString() === (worker._id as any).toString() && w.project === projectCode)
+              );
+              await oldClass.save();
+            }
+
+            
+            newClass.workers.push({
+              workerId: worker._id,
+              project: projectCode,
+              roleName: roleName || 'לא נבחר'
+            });
+            await newClass.save();
+            
+            changes.push('סמל כיתה');
+          }
+        }
+
+        
+        if (Object.keys(updateData).length > 0) {
+          updateData.updateDate = new Date();
+          await WorkerAfterNoon.findByIdAndUpdate(worker._id, updateData);
+        }
+
+        if (changes.length > 0) {
+          success.push({ id, changes });
+        }
+      } catch (error) {
+        console.error(`Error updating worker ${update.id}:`, error);
+        failed.push({ id: update.id, error: (error as Error).message });
+      }
+    }
+
+    res.status(200).json({ success, failed });
+  } catch (err) {
+    console.error('Error in general update:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
+export const getWorkersForGeneralUpdate = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { workerIds } = req.body;
+    
+    if (!Array.isArray(workerIds)) {
+      res.status(400).json({ error: 'נדרש מערך של תעודות זהות' });
+      return;
+    }
+    
+    const existingWorkers = await WorkerAfterNoon.find({ id: { $in: workerIds } }).lean();      
+    
+    const Class = require('../models/Class').default;
+    const enrichedWorkers = await Promise.all(
+      existingWorkers.map(async (worker) => {
+        
+        const workerClasses = await Class.find({
+          'workers.workerId': worker._id,
+          'workers.project': 4
+        });
+
+        
+        let classSymbol = 'לא מוגדר';
+        if (workerClasses.length > 0) {
+          const workerInClass = workerClasses[0].workers.find((w: any) => 
+            w.workerId.toString() === worker._id.toString() && w.project === 4
+          );
+          
+          
+          if (workerInClass) {
+            classSymbol = workerClasses[0].uniqueSymbol || 'לא מוגדר';
+          }
+        }
+
+        const enrichedWorker = {
+          id: worker.id,
+          firstName: worker.firstName,
+          lastName: worker.lastName,
+          phone: worker.phone,
+          email: worker.email,
+          roleName: worker.roleName,
+          classSymbol
+        };
+
+        
+        return enrichedWorker;
+      })
+    );
+
+    
+    res.status(200).json({ workers: enrichedWorkers });
+  } catch (err) {
+    console.error('Error getting workers for general update:', err);
     res.status(500).json({ error: (err as Error).message });
   }
 };

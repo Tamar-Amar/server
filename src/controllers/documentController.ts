@@ -263,7 +263,7 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
               classSymbol: cls.uniqueSymbol,
               className: cls.name,
               project: worker.project,
-              roleType: worker.roleType
+              roleName: worker.roleName
             });
           }
         });

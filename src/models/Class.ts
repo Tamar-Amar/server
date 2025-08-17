@@ -21,7 +21,7 @@ export interface ClassDocument extends Document {
   description: string;
   workers: Array<{
     workerId: Types.ObjectId;
-    roleType: string;
+    roleName: string;
     project: number;
   }>;
   institutionName: string;
@@ -51,7 +51,7 @@ const ClassSchema: Schema = new Schema({
   description: { type: String, required: false },  
   workers: [{
     workerId: { type: Schema.Types.ObjectId, ref: 'WorkerAfterNoon' },
-    roleType: { type: String },
+    roleName: { type: String },
     project: { type: Number }
   }],
   coordinatorId: { type: Schema.Types.ObjectId, ref: 'Coordinator', required: false },
@@ -69,8 +69,8 @@ ClassSchema.pre('save', function (next) {
   // נרמול התפקידים של העובדים
   if (this.workers && Array.isArray(this.workers)) {
     this.workers.forEach(worker => {
-      if (worker.roleType) {
-        worker.roleType = worker.roleType.trim().replace(/\s+/g, ' ');
+      if (worker.roleName) {
+        worker.roleName = worker.roleName.trim().replace(/\s+/g, ' ');
       }
     });
   }
@@ -82,8 +82,8 @@ ClassSchema.pre('findOneAndUpdate', function(next) {
   const update = this.getUpdate() as any;
   if (update && update.workers && Array.isArray(update.workers)) {
     update.workers.forEach((worker: any) => {
-      if (worker.roleType) {
-        worker.roleType = worker.roleType.trim().replace(/\s+/g, ' ');
+      if (worker.roleName) {
+        worker.roleName = worker.roleName.trim().replace(/\s+/g, ' ');
       }
     });
   }
