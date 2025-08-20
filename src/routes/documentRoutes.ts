@@ -15,6 +15,7 @@ import {
   bulkUpdateDocumentStatus,
   bulkDeleteDocuments,
   getDocumentTypes,
+  getAttendanceDocuments,
 } from '../controllers/documentController';
 import { authenticateToken } from '../middleware/auth';
 
@@ -32,6 +33,8 @@ router.post('/upload', upload.single('file'), uploadDocument);
 router.get('/', getAllDocuments);
 
 router.get('/personal', getAllPersonalDocuments);
+router.get('/all-personal', authenticateToken, getAllPersonalDocuments);
+router.get('/attendance/:projectCode', authenticateToken, getAttendanceDocuments);
 
 router.get('/coordinator/:coordinatorId', authenticateToken, getCoordinatorWorkerDocuments);
 
