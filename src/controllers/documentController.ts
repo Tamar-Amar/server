@@ -230,8 +230,6 @@ export const getAllDocuments: RequestHandler = async (req, res, next) => {
 
 export const getAllPersonalDocuments: RequestHandler = async (req, res, next) => {
   try {
-    console.log('🚀 getAllPersonalDocuments - מתחיל...');
-    
     const personalDocTags = [
       "אישור משטרה",
       "תעודת השכלה",
@@ -239,18 +237,15 @@ export const getAllPersonalDocuments: RequestHandler = async (req, res, next) =>
       'תעודת זהות',
       'אישור וותק'
     ];
-    
-    console.log('🔍 מחפש מסמכים עם תגים:', personalDocTags);
     const documents: Document[] = await DocumentModel.find({ tag: { $in: personalDocTags } }).lean();
-    console.log('📄 מצאתי', documents.length, 'מסמכים');
-    
-    console.log('📝 מעדכן תאריכים...');
     for (const doc of documents as any[]) {
+      if (doc.s3Key) {
+        doc.url = await getSignedUrl(doc.s3Key as string);
+      }
       doc.createdAt = doc.uploadedAt; // מיפוי uploadedAt ל-createdAt
       doc.updatedAt = doc.uploadedAt;  // מיפוי uploadedAt ל-updatedAt
     }
     
-    console.log('✅ שולח תשובה עם', documents.length, 'מסמכים');
     res.status(200).json({ documents });
   } catch (err: unknown) {
     console.error('❌ שגיאה ב-getAllPersonalDocuments:', err);
@@ -546,8 +541,7 @@ export const getDocumentStats: RequestHandler = async (req: RequestWithUser, res
 
 export const downloadMultipleDocuments: RequestHandler = async (req: RequestWithUser, res, next) => {
   try {
-    console.log('🚀 downloadMultipleDocuments - מתחיל...');
-    console.log('📋 פרמטרים שהתקבלו:', req.body);
+
     
     // הגדרת timeout ארוך יותר
     req.setTimeout(300000); // 5 דקות
@@ -677,14 +671,26 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
     // חיבור ה-archive ל-response
     archive.pipe(res);
 
-    console.log('📄 מתחיל לעבד', documents.length, 'מסמכים...');
     
     // הגבלת מספר המסמכים לביצועים טובים יותר
     const maxDocuments = req.body.maxDocuments || 100; // ברירת מחדל 100
     const documentsToProcess = documents.slice(0, maxDocuments);
     
-    if (documents.length > maxDocuments) {
-      console.log(`⚠️ הגבלתי ל-${maxDocuments} מסמכים מתוך ${documents.length} לביצועים טובים יותר`);
+    
+    // טעינת כל הכיתות מראש אם צריך ארגון לפי כיתה
+    let classMap = new Map();
+    if (documentType === 'project' && projectOrganization === 'byClass') {
+
+      const ClassModel = require('../models/Class').default;
+      const classIds = [...new Set(documentsToProcess.map(doc => doc.classId).filter(Boolean))];
+      
+      if (classIds.length > 0) {
+        const classes = await ClassModel.find({ _id: { $in: classIds } }).lean();
+        classes.forEach((cls: any) => {
+          classMap.set(cls._id.toString(), cls.uniqueSymbol || 'כיתה_לא_מוגדרת');
+        });
+
+      }
     }
     
     // הוספת כל המסמכים ל-ZIP
@@ -692,10 +698,10 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
     for (const doc of documentsToProcess) {
       processedCount++;
       if (processedCount % 10 === 0) {
-        console.log(`📊 עיבדתי ${processedCount}/${documentsToProcess.length} מסמכים...`);
+
       }
       try {
-        console.log('📎 מעבד מסמך:', doc.fileName);
+
         const fileBuffer = await getFileFromS3(doc.s3Key as string);
         // מציאת שם העובד
         let workerName = 'לא ידוע';
@@ -743,8 +749,8 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
         
         if (documentType === 'project' && projectOrganization === 'byClass') {
           // ארגון לפי כיתה/מסגרת לפרויקט
-          // נשתמש במספר הסמל הייחודי של הכיתה
-          const classSymbol = doc.classId || 'כיתה_לא_מוגדרת';
+          // נשתמש ב-classMap שכבר טענו
+          const classSymbol = doc.classId ? classMap.get(doc.classId.toString()) || 'כיתה_לא_מוגדרת' : 'כיתה_לא_מוגדרת';
           fullPath = `${classSymbol}/${organizedFileName}`;
         } else if (documentType === 'project' && projectOrganization === 'byType') {
           // ארגון לפי סוג נוכחות לפרויקט
@@ -766,7 +772,7 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
           continue;
         }
         
-        console.log('✅ הוספתי לקובץ ZIP:', fullPath);
+
         archive.append(fileBuffer, { name: fullPath });
       } catch (error) {
         console.error(`❌ שגיאה בהוספת קובץ ${doc.fileName} ל-ZIP:`, error);
@@ -774,12 +780,11 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
       }
     }
     
-    console.log('📦 סיימתי לעבד את כל המסמכים');
 
-    console.log('📦 מסיים יצירת ZIP...');
+
     // סיום ה-ZIP
     await archive.finalize();
-    console.log('✅ ZIP הושלם בהצלחה');
+
 
   } catch (err: unknown) {
     console.error('❌ שגיאה ב-downloadMultipleDocuments:', err);
@@ -881,26 +886,19 @@ export const getDocumentTypes: RequestHandler = async (req, res, next) => {
 
 export const getAttendanceDocuments: RequestHandler = async (req, res, next) => {
   try {
-    console.log('🚀 getAttendanceDocuments - מתחיל...');
     const { projectCode } = req.params;
-    console.log('📋 קוד פרויקט:', projectCode);
-    
+
     if (!projectCode) {
-      console.log('❌ קוד פרויקט חסר');
       res.status(400).json({ error: 'קוד פרויקט נדרש' });
       return;
     }
 
-    console.log('📚 טוען מודל AttendanceDocument...');
     const AttendanceDocumentModel = require('../models/AttendanceDocument').default;
     
-    console.log('🔍 מחפש מסמכי נוכחות עבור פרויקט:', projectCode);
     const documents = await AttendanceDocumentModel.find({ 
       projectCode: parseInt(projectCode) 
     }).lean();
     
-    console.log('📄 מצאתי', documents.length, 'מסמכי נוכחות');
-    console.log('✅ שולח תשובה');
 
     res.json({ documents });
   } catch (err: unknown) {

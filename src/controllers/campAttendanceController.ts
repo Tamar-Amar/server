@@ -27,13 +27,8 @@ function logErrorToFile(message: string) {
 
 export const createCampAttendance: RequestHandler = async (req, res) => {
   try {
-    // הדפסת טיפוסים וערכים
-    Object.entries(req.body).forEach(([k, v]) => {
-      console.log(`שדה ${k}:`, v, '| טיפוס:', typeof v);
-    });
     const { projectCode, classId, coordinatorId, leaderId, month, workerAttendanceDoc, studentAttendanceDoc, controlDocs } = req.body;
     
-    // בדיקה אם השדות החובה קיימים (אפילו אם ריקים)
     if (!projectCode || !classId || !coordinatorId || !leaderId || !month) {
       logErrorToFile('חסר שדה חובה! ' + JSON.stringify({ projectCode, classId, coordinatorId, leaderId, month }));
       res.status(400).json({ error: 'חסרים שדות חובה' });
@@ -62,8 +57,6 @@ export const createCampAttendance: RequestHandler = async (req, res) => {
 // פונקציה חדשה לשליפת דוחות campAttendance
 export const getCampAttendance: RequestHandler = async (req, res) => {
   try {
-    console.log("Starting getCampAttendance...");
-    
     const campAttendances = await CampAttendance.find()
       .populate({
         path: 'classId',
@@ -90,10 +83,6 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
         select: 'fileName fileType s3Key uploadedAt status comments tz type'
       });
     
-    console.log("Found", campAttendances.length, "records");
-    console.log("First record raw:", campAttendances[0]);
-    console.log("First record workerAttendanceDoc raw:", campAttendances[0]?.workerAttendanceDoc);
-    
     // הוספת URL חתום לכל מסמך
     const campAttendancesWithUrls = await Promise.all(
       campAttendances.map(async (record) => {
@@ -117,13 +106,10 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
         recordObj.studentAttendanceDoc = await addUrlToDoc(recordObj.studentAttendanceDoc);
         recordObj.controlDocs = await Promise.all(recordObj.controlDocs?.map(addUrlToDoc) || []);
 
-        console.log("recordObj",recordObj);
-        
         return recordObj;
       })
     );
-    
-    console.log("Sending response with", campAttendancesWithUrls.length, "records");
+      
     res.status(200).json(campAttendancesWithUrls);
     return;
   } catch (err: any) {
