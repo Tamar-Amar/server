@@ -5,16 +5,7 @@ import WorkerAfterNoon from '../models/WorkerAfterNoon';
 import User from '../models/User';
 import { comparePassword, hashPassword } from '../utils/passwordUtils';
 import nodemailer from 'nodemailer';
-
-// הרחבת הטיפוס Request כדי לכלול את המאפיין user
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    role: string;
-    username?: string;
-    idNumber?: string;
-  };
-}
+import { AuthenticatedRequest } from '../middleware/auth';
 
 const transporter = nodemailer.createTransport({
   service: "gmail",

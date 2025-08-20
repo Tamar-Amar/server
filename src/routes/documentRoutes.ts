@@ -9,6 +9,12 @@ import {
   getAllPersonalDocuments,
   getCoordinatorWorkerDocuments,
   cleanupUndefinedTags,
+  getDocumentsWithFilters,
+  getDocumentStats,
+  downloadMultipleDocuments,
+  bulkUpdateDocumentStatus,
+  bulkDeleteDocuments,
+  getDocumentTypes,
 } from '../controllers/documentController';
 import { authenticateToken } from '../middleware/auth';
 
@@ -38,5 +44,14 @@ router.delete('/:documentId', deleteDocument);
 
 // נתיב לניקוי מסמכים עם תג undefined (רק למנהלים)
 router.delete('/cleanup/undefined-tags', authenticateToken, cleanupUndefinedTags);
+
+// נתיבים חדשים לניהול מסמכים מתקדם
+router.get('/filters/search', authenticateToken, getDocumentsWithFilters);
+router.get('/stats', authenticateToken, getDocumentStats);
+router.get('/types', getDocumentTypes);
+
+router.post('/download-multiple', authenticateToken, downloadMultipleDocuments);
+router.patch('/bulk-update-status', authenticateToken, bulkUpdateDocumentStatus);
+router.delete('/bulk-delete', authenticateToken, bulkDeleteDocuments);
 
 export default router;
