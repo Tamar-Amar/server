@@ -195,6 +195,47 @@ const upload = multer();
 router.get('/', getAllAttendance);
 router.post('/submit', submitAttendance);
 router.get('/camp', getCampAttendance);
+router.get('/camp/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const campAttendance = await CampAttendance.findById(id)
+      .populate('classId')
+      .populate('coordinatorId')
+      .populate('leaderId')
+      .populate('workerAttendanceDoc')
+      .populate('studentAttendanceDoc')
+      .populate('controlDocs');
+
+    if (!campAttendance) {
+      res.status(404).json({ error: 'דוח לא נמצא' });
+      return;
+    }
+
+    const recordObj = campAttendance.toObject();
+    
+    const addUrlToDoc = async (doc: any) => {
+      if (doc && doc.s3Key && doc.status === 'ממתין') {
+        try {
+          const url = await getSignedUrl(doc.s3Key);
+          return { ...doc, url };
+        } catch (error) {
+          return { ...doc, url: null };
+        }
+      }
+      return doc;
+    };
+    
+    recordObj.workerAttendanceDoc = await addUrlToDoc(recordObj.workerAttendanceDoc);
+    recordObj.studentAttendanceDoc = await addUrlToDoc(recordObj.studentAttendanceDoc);
+    recordObj.controlDocs = await Promise.all(recordObj.controlDocs?.map(addUrlToDoc) || []);
+
+    res.json(recordObj);
+  } catch (error) {
+    console.error('שגיאה בקבלת דוח נוכחות:', error);
+    res.status(500).json({ error: 'שגיאה בקבלת דוח נוכחות' });
+  }
+});
 
 router.delete('/camp-document', deleteCampAttendanceDocument);
 router.delete('/camp/:recordId', deleteCampAttendanceRecord);
