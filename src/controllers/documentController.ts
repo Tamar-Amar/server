@@ -3,7 +3,6 @@ import DocumentModel, { Document, DocumentStatus, DocumentType } from '../models
 import { uploadFileToS3, deleteFileFromS3, getSignedUrl, getFileFromS3 } from '../services/s3Service';
 import { Types } from 'mongoose';
 import * as archiver from 'archiver';
-import { Readable } from 'stream';
 
 
 interface RequestWithUser extends Request {
@@ -41,37 +40,9 @@ const getFileExtension = (mimeType: string): string => {
   return mimeToExt[mimeType] || '.bin';
 };
 
-const getAttendanceType = (fileName: string): string => {
-  const lowerFileName = fileName.toLowerCase();
-  
-  if (lowerFileName.includes('עובד') || lowerFileName.includes('staff') || lowerFileName.includes('worker')) {
-    return 'נוכחות_עובדים';
-  } else if (lowerFileName.includes('תלמיד') || lowerFileName.includes('student') || lowerFileName.includes('child')) {
-    return 'נוכחות_תלמידים';
-  } else if (lowerFileName.includes('בקרה') || lowerFileName.includes('supervision') || lowerFileName.includes('control')) {
-    return 'נוכחות_בקרה';
-  } else {
-    return 'נוכחות_כללית';
-  }
-};
 
-const getAttendanceTypeFromContext = (docId: string, attendanceDocs: any[]): string => {
-  for (const doc of attendanceDocs) {
-    if (doc._id.toString() === docId) {
-      switch (doc.type) {
-        case 'נוכחות עובדים':
-          return 'נוכחות_עובדים';
-        case 'נוכחות תלמידים':
-          return 'נוכחות_תלמידים';
-        case 'מסמך בקרה':
-          return 'נוכחות_בקרה';
-        default:
-          return 'נוכחות_כללית';
-      }
-    }
-  }
-  return 'נוכחות_כללית';
-};
+
+
 
 export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, next) => {
   try {
@@ -423,103 +394,9 @@ export const cleanupUndefinedTags: RequestHandler = async (req: RequestWithUser,
   }
 };
 
-// פונקציות חדשות לניהול מסמכים מתקדם
-
-export const getDocumentsWithFilters: RequestHandler = async (req: RequestWithUser, res, next) => {
-  try {
-    const { 
-      documentType, 
-      status, 
-      workerId, 
-      project, 
-      dateFrom, 
-      dateTo, 
-      page = 1, 
-      limit = 50,
-      sortBy = 'uploadedAt',
-      sortOrder = 'desc'
-    } = req.query;
-
-    // בניית פילטר
-    const filter: any = {};
-
-    if (documentType) {
-      filter.tag = documentType;
-    }
-
-    if (status) {
-      filter.status = status;
-    }
-
-    if (workerId) {
-      filter.operatorId = new Types.ObjectId(workerId as string);
-    }
-
-    if (dateFrom || dateTo) {
-      filter.uploadedAt = {};
-      if (dateFrom) {
-        filter.uploadedAt.$gte = new Date(dateFrom as string);
-      }
-      if (dateTo) {
-        filter.uploadedAt.$lte = new Date(dateTo as string);
-      }
-    }
-
-    // אם יש פרויקט, נצטרך לבדוק את העובדים של הפרויקט
-    if (project) {
-      const WorkerAfterNoonModel = require('../models/WorkerAfterNoon').default;
-      const workers = await WorkerAfterNoonModel.find({ 
-        projectCodes: parseInt(project as string) 
-      });
-      const workerIds = workers.map((w: any) => w._id);
-      filter.operatorId = { $in: workerIds };
-    }
-
-    // ספירה כוללת
-    const totalCount = await DocumentModel.countDocuments(filter);
-
-    // קבלת מסמכים עם pagination
-    const skip = (Number(page) - 1) * Number(limit);
-    const sort: any = {};
-    sort[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
-
-    const documents = await DocumentModel.find(filter)
-      .sort(sort)
-      .skip(skip)
-      .limit(Number(limit))
-      .lean();
-
-    // הוספת URLs למסמכים
-    const docsWithUrls = await Promise.all(documents.map(async (doc: any) => {
-      if (doc.s3Key) {
-        doc.url = await getSignedUrl(doc.s3Key as string);
-      }
-      doc.createdAt = doc.uploadedAt;
-      doc.updatedAt = doc.uploadedAt;
-      return doc;
-    }));
-
-    res.json({
-      documents: docsWithUrls,
-      pagination: {
-        currentPage: Number(page),
-        totalPages: Math.ceil(totalCount / Number(limit)),
-        totalCount,
-        hasNext: Number(page) * Number(limit) < totalCount,
-        hasPrev: Number(page) > 1
-      }
-    });
-
-  } catch (err: unknown) {
-    console.error('Error in getDocumentsWithFilters:', err);
-    const error = err instanceof Error ? err.message : 'שגיאה לא ידועה';
-    res.status(500).json({ error });
-  }
-};
 
 export const getDocumentStats: RequestHandler = async (req: RequestWithUser, res, next) => {
   try {
-    // נחזיר סטטיסטיקות פשוטות בלי aggregation
     const totalDocuments = await DocumentModel.countDocuments();
     const documentsWithOperator = await DocumentModel.countDocuments({ 
       operatorId: { $exists: true, $ne: null } 
@@ -541,11 +418,8 @@ export const getDocumentStats: RequestHandler = async (req: RequestWithUser, res
 
 export const downloadMultipleDocuments: RequestHandler = async (req: RequestWithUser, res, next) => {
   try {
-
-    
-    // הגדרת timeout ארוך יותר
-    req.setTimeout(300000); // 5 דקות
-    res.setTimeout(300000); // 5 דקות
+    req.setTimeout(300000); 
+    res.setTimeout(300000); 
     
     const { 
       documentIds, 
@@ -566,19 +440,15 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
     if (documentIds && documentIds.length > 0) {
       filter._id = { $in: documentIds.map((id: string) => new Types.ObjectId(id)) };
     } else {
-      // לוגיקה חדשה לפי סוג מסמכים
       if (documentType === 'personal') {
-        // מסמכים אישיים - כל המסמכים האישיים
         const personalDocTypes = [
           'תעודת זהות', 'אישור משטרה', 'חוזה', 'תעודת השכלה', 
           'אישור וותק', 'אישור רפואי'
         ];
         filter.tag = { $in: personalDocTypes };
       } else if (documentType === 'project' && selectedProject) {
-        // מסמכי נוכחות פרויקט ספציפי - נשתמש באוסף attendance-documents
         filter.projectCode = parseInt(selectedProject);
       } else {
-        // פילטרים רגילים
         if (documentType && documentType !== 'personal' && documentType !== 'project') {
           filter.tag = documentType;
         }
@@ -604,11 +474,9 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
     let attendanceDocs: any[] = [];
     
     if (documentType === 'project' && selectedProject) {
-      // עבור מסמכי נוכחות - נשתמש באוסף attendance-documents
       const AttendanceDocumentModel = require('../models/AttendanceDocument').default;
       attendanceDocs = await AttendanceDocumentModel.find(filter).lean();
       
-      // המרה לפורמט אחיד
       documents = attendanceDocs.map((doc: any) => ({
         _id: doc._id,
         fileName: doc.fileName,
@@ -629,7 +497,6 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
         type: doc.type
       }));
     } else {
-      // עבור מסמכים רגילים - נשתמש באוסף documents
       documents = await DocumentModel.aggregate([
         { $match: filter },
         {
@@ -658,29 +525,22 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
       return;
     }
 
-    // יצירת ZIP file עם כל המסמכים
     const archive = archiver.create('zip', {
-      zlib: { level: 9 } // רמת דחיסה מקסימלית
+      zlib: { level: 9 } 
     });
 
-    // הגדרת headers להורדת ZIP
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="documents-${timestamp}.zip"`);
     
-    // חיבור ה-archive ל-response
     archive.pipe(res);
 
-    
-    // הגבלת מספר המסמכים לביצועים טובים יותר
-    const maxDocuments = req.body.maxDocuments || 100; // ברירת מחדל 100
+    const maxDocuments = req.body.maxDocuments || 100; 
     const documentsToProcess = documents.slice(0, maxDocuments);
     
     
-    // טעינת כל הכיתות מראש אם צריך ארגון לפי כיתה
     let classMap = new Map();
-    if (documentType === 'project' && projectOrganization === 'byClass') {
-
+    if (documentType === 'project') {
       const ClassModel = require('../models/Class').default;
       const classIds = [...new Set(documentsToProcess.map(doc => doc.classId).filter(Boolean))];
       
@@ -689,11 +549,9 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
         classes.forEach((cls: any) => {
           classMap.set(cls._id.toString(), cls.uniqueSymbol || 'כיתה_לא_מוגדרת');
         });
-
-      }
+      } 
     }
     
-    // הוספת כל המסמכים ל-ZIP
     let processedCount = 0;
     for (const doc of documentsToProcess) {
       processedCount++;
@@ -703,40 +561,36 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
       try {
 
         const fileBuffer = await getFileFromS3(doc.s3Key as string);
-        // מציאת שם העובד
         let workerName = 'לא ידוע';
         let workerId = 'לא ידוע';
         
-        if (doc.operatorId && typeof doc.operatorId === 'object') {
+        if (documentType === 'project' && doc.classId) {
+          const classSymbol = classMap.get(doc.classId.toString()) || 'כיתה_לא_מוגדרת';
+          workerName = classSymbol;
+          workerId = classSymbol;
+        } else if (doc.operatorId && typeof doc.operatorId === 'object') {
           const operator = doc.operatorId as any;
           if (operator.firstName && operator.lastName) {
-            workerName = `${operator.lastName} ${operator.firstName}`; // שם משפחה קודם
+            workerName = `${operator.lastName} ${operator.firstName}`; 
             workerId = operator.idNumber || 'לא ידוע';
           }
         }
-        // וידוא שיש סיומת לקובץ
         let fileName = doc.fileName as string;
         if (!fileName.includes('.')) {
-          // אם אין סיומת, נוסיף סיומת לפי סוג הקובץ
           const extension = getFileExtension(doc.fileType as string);
           fileName = `${doc.fileName}${extension}`;
         }
         
-        // יצירת שם קובץ מאורגן
         let organizedFileName = fileName;
         
-        // חילוץ הסיומת מהשם המקורי
         const lastDotIndex = fileName.lastIndexOf('.');
         const extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : '';
         
-        // יצירת שם קובץ לפי הפורמט הנבחר
         if (fileNameFormat === 'simple') {
-          // פורמט פשוט: שם_משפחה_שם_פרטי_סוג_מסמך
           const cleanWorkerName = workerName.replace(/\s+/g, '_');
           const cleanDocType = doc.tag.replace(/\s+/g, '_');
           organizedFileName = `${cleanWorkerName}_${cleanDocType}${extension}`;
         } else {
-          // פורמט מפורט: תז_שם_משפחה_שם_פרטי_סוג_מסמך_תאריך
           const cleanWorkerId = workerId.replace(/\s+/g, '_');
           const cleanWorkerName = workerName.replace(/\s+/g, '_');
           const cleanDocType = doc.tag.replace(/\s+/g, '_');
@@ -744,47 +598,41 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
           organizedFileName = `${cleanWorkerId}_${cleanWorkerName}_${cleanDocType}_${uploadDate}${extension}`;
         }
         
-        // יצירת נתיב קובץ לפי סוג הארגון
         let fullPath: string;
         
         if (documentType === 'project' && projectOrganization === 'byClass') {
-          // ארגון לפי כיתה/מסגרת לפרויקט
-          // נשתמש ב-classMap שכבר טענו
+
           const classSymbol = doc.classId ? classMap.get(doc.classId.toString()) || 'כיתה_לא_מוגדרת' : 'כיתה_לא_מוגדרת';
           fullPath = `${classSymbol}/${organizedFileName}`;
         } else if (documentType === 'project' && projectOrganization === 'byType') {
-          // ארגון לפי סוג נוכחות לפרויקט
-          // נחלק לפי סוג הנוכחות (עובדים/תלמידים/בקרה)
-          // נצטרך למצוא את סוג המסמך מהקשר ב-attendance-documents
-          const attendanceType = getAttendanceTypeFromContext(doc._id, attendanceDocs);
+
+          let attendanceType = 'נוכחות_כללית';
+          
+          if (doc.tag === 'נוכחות עובדים' || doc.type === 'נוכחות עובדים') {
+            attendanceType = 'נוכחות_עובדים';
+          } else if (doc.tag === 'נוכחות תלמידים' || doc.type === 'נוכחות תלמידים') {
+            attendanceType = 'נוכחות_תלמידים';
+          } else if (doc.tag === 'בקרה' || doc.type === 'בקרה') {
+            attendanceType = 'נוכחות_בקרה';
+          }
+          
           fullPath = `${attendanceType}/${organizedFileName}`;
         } else if (organizationType === 'byType') {
-          // ארגון לפי סוג מסמך
           fullPath = `${doc.tag}/${organizedFileName}`;
         } else {
-          // ארגון לפי עובד
           fullPath = `${workerName}/${organizedFileName}`;
         }
         
-        // עבור מסמכי נוכחות, נצטרך לטפל בקבצים אחרת
         if (documentType === 'project' && !doc.s3Key) {
-          // נדלג על מסמכים ללא s3Key
           continue;
         }
-        
 
         archive.append(fileBuffer, { name: fullPath });
       } catch (error) {
         console.error(`❌ שגיאה בהוספת קובץ ${doc.fileName} ל-ZIP:`, error);
-        // נמשיך עם שאר הקבצים גם אם אחד נכשל
       }
     }
-    
-
-
-    // סיום ה-ZIP
-    await archive.finalize();
-
+        await archive.finalize();
 
   } catch (err: unknown) {
     console.error('❌ שגיאה ב-downloadMultipleDocuments:', err);
@@ -832,13 +680,10 @@ export const bulkDeleteDocuments: RequestHandler = async (req: RequestWithUser, 
       res.status(400).json({ error: 'לא נבחרו מסמכים למחיקה' });
       return;
     }
-
-    // קבלת המסמכים לפני מחיקה
     const documents = await DocumentModel.find({
       _id: { $in: documentIds.map((id: string) => new Types.ObjectId(id)) }
     });
 
-    // מחיקה מ-S3
     for (const doc of documents) {
       try {
         await deleteFileFromS3(doc.s3Key as string);
@@ -847,7 +692,6 @@ export const bulkDeleteDocuments: RequestHandler = async (req: RequestWithUser, 
       }
     }
 
-    // מחיקה מהמסד נתונים
     const result = await DocumentModel.deleteMany({
       _id: { $in: documentIds.map((id: string) => new Types.ObjectId(id)) }
     });
@@ -866,7 +710,6 @@ export const bulkDeleteDocuments: RequestHandler = async (req: RequestWithUser, 
 
 export const getDocumentTypes: RequestHandler = async (req, res, next) => {
   try {
-    // נחזיר רשימה קבועה של סוגי מסמכים
     const types = [
       'תעודת זהות',
       'אישור משטרה', 
@@ -907,5 +750,6 @@ export const getAttendanceDocuments: RequestHandler = async (req, res, next) => 
     res.status(500).json({ error });
   }
 };
+
 
 
