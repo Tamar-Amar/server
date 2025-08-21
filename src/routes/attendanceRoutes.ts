@@ -451,6 +451,29 @@ router.patch('/attendance-document/:id/status', authenticateToken, async (req, r
     return;
   }
 });
+
+router.get('/document/:id/url', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const doc = await AttendanceDocument.findById(id);
+    if (!doc) {
+      res.status(404).json({ error: 'לא נמצא מסמך' });
+      return;
+    }
+
+    if (!doc.s3Key) {
+      res.status(404).json({ error: 'לא נמצא קובץ במסמך' });
+      return;
+    }
+
+    const url = await getSignedUrl(doc.s3Key);
+    res.json({ url });
+  } catch (error) {
+    console.error('שגיאה ביצירת URL למסמך:', error);
+    res.status(500).json({ error: 'שגיאה ביצירת URL למסמך' });
+  }
+});
 router.patch('/update-attendance/:id', updateAttendanceAttendanceDoc);
 router.patch('/update-after-doc-delete', updateAttendanceAfterDocDelete);
 router.post('/upload-attendance-doc', upload.single('file'), uploadAttendanceDocument);
