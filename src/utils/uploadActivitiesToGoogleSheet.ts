@@ -1,7 +1,6 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import fs from 'fs';
-import Activity from '../models/Activity';
 import Class from '../models/Class';
 import '../models/Operator';
 

@@ -99,10 +99,8 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// Error handling
 app.use(errorHandler);
 
-// 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ message: 'העמוד לא נמצא' });
 });
