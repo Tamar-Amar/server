@@ -1,4 +1,4 @@
-import { Request, Response, RequestHandler } from 'express';
+import { Request, Response} from 'express';
 import jwt from 'jsonwebtoken';
 import Operator from '../models/Operator';
 import WorkerAfterNoon from '../models/WorkerAfterNoon';
