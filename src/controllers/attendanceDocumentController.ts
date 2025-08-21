@@ -16,10 +16,8 @@ export const uploadAttendanceDocument: RequestHandler = async (req, res) => {
       res.status(400).json({ error: 'חסרים שדות חובה או קובץ' });
       return;
     }
-    // העלאת קובץ ל-S3
     const { buffer, originalname, mimetype } = req.file;
     const s3Key = await uploadFileToS3(buffer, originalname, mimetype);
-    // יצירת AttendanceDocument
     const doc = await AttendanceDocument.create({
       operatorId,
       classId,

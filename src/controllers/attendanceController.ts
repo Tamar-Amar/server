@@ -45,13 +45,11 @@ export const deleteAttendanceRecord: RequestHandler = async (req, res) => {
   }
 };
 
-// קבלת דוחות נוכחות של קייטנות לפי רכז
 export const getCampAttendanceByCoordinator = async (req: Request, res: Response): Promise<void> => {
   try {
     const { coordinatorId } = req.params;
     
 
-    // קבלת פרטי הרכז
     const User = require('../models/User').default;
     const coordinator = await User.findById(coordinatorId);
     
@@ -61,26 +59,21 @@ export const getCampAttendanceByCoordinator = async (req: Request, res: Response
     }
 
 
-    // אם אין שיוכי פרויקטים, החזר מערך ריק
     if (!coordinator.projectCodes || coordinator.projectCodes.length === 0) {
       res.status(200).json([]);
       return;
     }
 
-    // יצירת רשימת קודי מוסד של הרכז
     const coordinatorInstitutionCodes = coordinator.projectCodes.map((pc: any) => pc.institutionCode);
 
-    // מציאת כל הכיתות של קודי המוסד של הרכז
     const Class = require('../models/Class').default;
     const classes = await Class.find({
       institutionCode: { $in: coordinatorInstitutionCodes }
     });
 
 
-    // יצירת רשימת ID של כיתות
     const classIds = classes.map((cls: any) => cls._id);
 
-    // קבלת דוחות הנוכחות של הכיתות עם מילוי מלא של המסמכים
     const CampAttendance = require('../models/CampAttendance').default;
     const attendanceRecords = await CampAttendance.find({
       classId: { $in: classIds }
@@ -106,7 +99,6 @@ export const getCampAttendanceByCoordinator = async (req: Request, res: Response
     .lean();
 
 
-    // הוספת URLs למסמכים - רק למסמכים במצב "ממתין"
     for (const record of attendanceRecords) {
       if (record.workerAttendanceDoc && record.workerAttendanceDoc.s3Key && record.workerAttendanceDoc.status === 'ממתין') {
         record.workerAttendanceDoc.url = await getSignedUrl(record.workerAttendanceDoc.s3Key);

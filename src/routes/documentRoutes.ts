@@ -9,6 +9,12 @@ import {
   getAllPersonalDocuments,
   getCoordinatorWorkerDocuments,
   cleanupUndefinedTags,
+  getDocumentStats,
+  downloadMultipleDocuments,
+  bulkUpdateDocumentStatus,
+  bulkDeleteDocuments,
+  getDocumentTypes,
+  getAttendanceDocuments,
 } from '../controllers/documentController';
 import { authenticateToken } from '../middleware/auth';
 
@@ -26,6 +32,8 @@ router.post('/upload', upload.single('file'), uploadDocument);
 router.get('/', getAllDocuments);
 
 router.get('/personal', getAllPersonalDocuments);
+router.get('/all-personal', authenticateToken, getAllPersonalDocuments);
+router.get('/attendance/:projectCode', authenticateToken, getAttendanceDocuments);
 
 router.get('/coordinator/:coordinatorId', authenticateToken, getCoordinatorWorkerDocuments);
 
@@ -36,7 +44,13 @@ router.patch('/status/:documentId', updateDocumentStatus);
 
 router.delete('/:documentId', deleteDocument);
 
-// נתיב לניקוי מסמכים עם תג undefined (רק למנהלים)
 router.delete('/cleanup/undefined-tags', authenticateToken, cleanupUndefinedTags);
+
+router.get('/stats', authenticateToken, getDocumentStats);
+router.get('/types', getDocumentTypes);
+
+router.post('/download-multiple', authenticateToken, downloadMultipleDocuments);
+router.patch('/bulk-update-status', authenticateToken, bulkUpdateDocumentStatus);
+router.delete('/bulk-delete', authenticateToken, bulkDeleteDocuments);
 
 export default router;

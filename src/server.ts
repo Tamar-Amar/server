@@ -15,6 +15,7 @@ import pdfRoutes from './routes/pdfRoutes';
 import emailRoutes from './routes/emailRoutes';
 import documentRoutes from './routes/documentRoutes';
 import workerRoutes from './routes/workerAfterNoonRoutes';
+import workerAssignmentRoutes from './routes/workerAssignmentRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
 import coordinatorRoutes from './routes/coordinatorRoutes';
 import userRoutes from './routes/userRoutes';
@@ -71,6 +72,7 @@ app.use('/api/stores', storeRoutes);
 app.use('/api/activities', activityRoutes);
 app.use("/api/operators", operatorRoutes);
 app.use("/api/worker-after-noon", workerRoutes);
+app.use('/api/worker-assignments', workerAssignmentRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/auth', authRoutes);
@@ -100,10 +102,8 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// Error handling
 app.use(errorHandler);
 
-// 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ message: 'העמוד לא נמצא' });
 });

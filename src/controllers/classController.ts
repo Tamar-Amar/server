@@ -391,7 +391,6 @@ export const getClassesByCoordinatorInstitutionCodes = async (req: Request, res:
   try {
     const { coordinatorId } = req.params;
     
-    // קבלת פרטי הרכז
     const User = require('../models/User').default;
     const coordinator = await User.findById(coordinatorId);
     
@@ -400,16 +399,13 @@ export const getClassesByCoordinatorInstitutionCodes = async (req: Request, res:
       return;
     }
 
-    // אם אין שיוכי פרויקטים, החזר מערך ריק
     if (!coordinator.projectCodes || coordinator.projectCodes.length === 0) {
       res.status(200).json([]);
       return;
     }
 
-    // יצירת רשימת קודי מוסד של הרכז
     const coordinatorInstitutionCodes = coordinator.projectCodes.map((pc: any) => pc.institutionCode);
     
-    // מציאת כל הכיתות של קודי המוסד של הרכז עם פרטי העובדים
     const classes = await Class.find({
       institutionCode: { $in: coordinatorInstitutionCodes },
       isActive: true

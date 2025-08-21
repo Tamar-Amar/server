@@ -54,23 +54,38 @@ export const createCampAttendance: RequestHandler = async (req, res) => {
   }
 };
 
-// פונקציה חדשה לשליפת דוחות campAttendance
 export const getCampAttendance: RequestHandler = async (req, res) => {
   try {
     const campAttendances = await CampAttendance.find()
-      .populate('classId')
-      .populate('coordinatorId')
-      .populate('leaderId')
-      .populate('workerAttendanceDoc')
-      .populate('studentAttendanceDoc')
-      .populate('controlDocs');
+      .populate({
+        path: 'classId',
+        select: 'name uniqueSymbol type address street streetNumber projectCodes education gender institutionName institutionCode hasAfternoonCare monthlyBudget childresAmount isActive description'
+      })
+      .populate({
+        path: 'coordinatorId',
+        select: 'firstName lastName username role email phone isActive projectCodes'
+      })
+      .populate({
+        path: 'leaderId',
+        select: 'firstName lastName id accountantCode modelCode projectCodes roleName phone email isActive'
+      })
+      .populate({
+        path: 'workerAttendanceDoc',
+        select: 'fileName fileType s3Key uploadedAt status comments tz type'
+      })
+      .populate({
+        path: 'studentAttendanceDoc',
+        select: 'fileName fileType s3Key uploadedAt status comments tz type'
+      })
+      .populate({
+        path: 'controlDocs',
+        select: 'fileName fileType s3Key uploadedAt status comments tz type'
+      });
     
-    // הוספת URL חתום לכל מסמך
     const campAttendancesWithUrls = await Promise.all(
       campAttendances.map(async (record) => {
         const recordObj = record.toObject();
         
-        // פונקציה עזר להוספת URL למסמך - רק למסמכים במצב "ממתין"
         const addUrlToDoc = async (doc: any) => {
           if (doc && doc.s3Key && doc.status === 'ממתין') {
             try {
@@ -83,15 +98,14 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
           return doc;
         };
         
-        // הוספת URL לכל המסמכים
         recordObj.workerAttendanceDoc = await addUrlToDoc(recordObj.workerAttendanceDoc);
         recordObj.studentAttendanceDoc = await addUrlToDoc(recordObj.studentAttendanceDoc);
         recordObj.controlDocs = await Promise.all(recordObj.controlDocs?.map(addUrlToDoc) || []);
-        
+
         return recordObj;
       })
     );
-    
+      
     res.status(200).json(campAttendancesWithUrls);
     return;
   } catch (err: any) {
@@ -101,7 +115,6 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
   }
 }; 
 
-// פונקציה לעדכון דוח CampAttendance עם מסמך חדש
 export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
   try {
     const { id } = req.params;
@@ -113,7 +126,6 @@ export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
       return;
     }
     
-    // בדיקה שהדוח קיים
     const campAttendance = await CampAttendance.findById(id);
     if (!campAttendance) {
       logErrorToFile('לא נמצא דוח CampAttendance עם ID: ' + id);
@@ -121,7 +133,6 @@ export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
       return;
     }
     
-    // עדכון השדה המתאים
     let updateData: any = {};
     
     if (docType === 'workerAttendanceDoc') {
@@ -129,7 +140,6 @@ export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
     } else if (docType === 'studentAttendanceDoc') {
       updateData.studentAttendanceDoc = documentId;
     } else if (docType === 'controlDocs') {
-      // הוספה למערך controlDocs
       updateData.$push = { controlDocs: documentId };
     } else {
       logErrorToFile('סוג מסמך לא תקין: ' + docType);
@@ -137,7 +147,6 @@ export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
       return;
     }
     
-    // עדכון הדוח
     const updatedCampAttendance = await CampAttendance.findByIdAndUpdate(
       id,
       updateData,

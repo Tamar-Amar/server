@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } fro
 import { getSignedUrl as getSignedUrlAWS } from '@aws-sdk/s3-request-presigner';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+import { Readable } from 'stream';
 
 dotenv.config();
 
@@ -95,15 +96,30 @@ export const getSignedUrl = async (key: string): Promise<string> => {
   }
 };
 
-// פונקציה לניקוי cache ישן
-export const clearExpiredCache = () => {
-  const now = Date.now();
-  for (const [key, cached] of urlCache.entries()) {
-    if (cached.expiresAt <= now) {
-      urlCache.delete(key);
+export const getFileFromS3 = async (key: string): Promise<Buffer> => {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key
+    });
+
+    const response = await s3Client.send(command);
+    
+    if (!response.Body) {
+      throw new Error('No file content received from S3');
     }
+
+    // Convert stream to buffer
+    const chunks: Buffer[] = [];
+    const stream = response.Body as Readable;
+    
+    return new Promise((resolve, reject) => {
+      stream.on('data', (chunk: any) => chunks.push(Buffer.from(chunk)));
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+      stream.on('error', reject);
+    });
+  } catch (error) {
+    console.error('Error getting file from S3:', error);
+    throw new Error(`Failed to get file from S3 for key: ${key}`);
   }
 };
-
-// נקה cache ישן כל 10 דקות
-setInterval(clearExpiredCache, 600000);

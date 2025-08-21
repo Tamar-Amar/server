@@ -48,7 +48,6 @@ const WorkerAfterNoonSchema: Schema = new Schema({
   toObject: { getters: true }
 });
 
-// Middleware לנרמול התפקיד לפני שמירה
 WorkerAfterNoonSchema.pre('save', function(next) {
   if (typeof this.roleName === 'string') {
     this.roleName = this.roleName.trim().replace(/\s+/g, ' ');

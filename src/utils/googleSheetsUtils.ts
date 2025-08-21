@@ -1,16 +1,9 @@
-
-import { google } from 'googleapis';
-import { JWT } from 'google-auth-library';
-import Activity from '../models/Activity';
-import Class from '../models/Class';
 import '../models/Operator';
 import dotenv from 'dotenv';
 import { holidays } from './holidays'; 
 
 dotenv.config();
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
-const SHEET_NAME = 'google api';
 
 type PopulatedActivity = {
   classId: { uniqueSymbol: string; name: string; gender: string; type: string };

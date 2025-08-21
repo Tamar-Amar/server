@@ -52,12 +52,10 @@ const DocumentSchema = new Schema<Document>({
   comments: { type: String },
 });
 
-// Middleware למניעת יצירת מסמכים עם תג undefined
 DocumentSchema.pre('save', function(next) {
   if (!this.tag || this.tag === 'undefined' || this.tag.trim() === '') {
     return next(new Error('Tag is required and cannot be undefined or empty'));
   }
-  // נרמול התג
   this.tag = this.tag.trim();
   next();
 });

@@ -120,7 +120,6 @@ const updateAttendanceAttendanceDoc: RequestHandler = async (req, res) => {
     try {
         const { id } = req.params;
         const { docType, documentId } = req.body;
-        // עדכון רק אם projectCode=4
         const attendance = await MonthlyAttendance.findOneAndUpdate(
           { _id: id, projectCode: 4 },
           { $set: { [docType]: documentId } },
@@ -172,7 +171,6 @@ const getAllAttendance: RequestHandler = async (req, res) => {
 const updateAttendanceAfterDocDelete: RequestHandler = async (req, res) => {
   try {
     const { attendanceId, docType } = req.body;
-    // עדכון רק אם projectCode=4
     const updateQuery: any = { $unset: { [docType]: 1 } };
     const attendance = await MonthlyAttendance.findOneAndUpdate(
       { _id: attendanceId, projectCode: 4 },
@@ -198,11 +196,9 @@ router.get('/', getAllAttendance);
 router.post('/submit', submitAttendance);
 router.get('/camp', getCampAttendance);
 
-// נתיב למחיקת מסמך מ-CampAttendance - חייב להיות לפני הנתיבים עם פרמטרים
 router.delete('/camp-document', deleteCampAttendanceDocument);
 router.delete('/camp/:recordId', deleteCampAttendanceRecord);
 
-// נתיב להעלאת מסמך ל-CampAttendance
 router.post('/camp/upload-document', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     const { recordId, docType, docIndex } = req.body;
@@ -213,18 +209,15 @@ router.post('/camp/upload-document', authenticateToken, upload.single('file'), a
       return;
     }
 
-    // בדיקה שהדוח קיים
     const campAttendance = await CampAttendance.findById(recordId);
     if (!campAttendance) {
       res.status(404).json({ error: 'דוח לא נמצא' });
       return;
     }
 
-    // העלאת הקובץ ל-S3
     const fileName = `${docType} - ${campAttendance.month}`;
     const s3Key = await uploadFileToS3(file.buffer, fileName, file.mimetype);
 
-    // יצירת מסמך נוכחות
     const attendanceDoc = await AttendanceDocument.create({
       operatorId: campAttendance.leaderId,
       classId: campAttendance.classId,
@@ -241,7 +234,6 @@ router.post('/camp/upload-document', authenticateToken, upload.single('file'), a
       uploadedBy: (req as any).user?.id ? new Types.ObjectId((req as any).user.id as string) : undefined
     });
 
-    // עדכון רשומת CampAttendance
     let updateData: any = {};
     
     if (docType === 'workerAttendanceDoc') {
@@ -275,7 +267,6 @@ router.post('/camp/upload-document', authenticateToken, upload.single('file'), a
   }
 });
 
-// נתיב למחיקת מסמך מ-CampAttendance
 router.delete('/camp/delete-document', authenticateToken, async (req, res) => {
   try {
     const { recordId, docType, docIndex } = req.body;
@@ -285,7 +276,6 @@ router.delete('/camp/delete-document', authenticateToken, async (req, res) => {
       return;
     }
 
-    // בדיקה שהדוח קיים
     const campAttendance = await CampAttendance.findById(recordId);
     if (!campAttendance) {
       res.status(404).json({ error: 'דוח לא נמצא' });
@@ -294,7 +284,6 @@ router.delete('/camp/delete-document', authenticateToken, async (req, res) => {
 
     let documentId: string | undefined;
 
-    // קבלת מזהה המסמך לפי הסוג
     if (docType === 'workerAttendanceDoc') {
       documentId = campAttendance.workerAttendanceDoc?.toString();
     } else if (docType === 'studentAttendanceDoc') {
@@ -315,7 +304,6 @@ router.delete('/camp/delete-document', authenticateToken, async (req, res) => {
       return;
     }
 
-    // מחיקת המסמך מ-S3 ומהדאטהבייס
     const attendanceDoc = await AttendanceDocument.findById(documentId);
     if (attendanceDoc) {
       if (attendanceDoc.s3Key) {
@@ -324,7 +312,6 @@ router.delete('/camp/delete-document', authenticateToken, async (req, res) => {
       await AttendanceDocument.findByIdAndDelete(documentId);
     }
 
-    // עדכון רשומת CampAttendance
     let updateData: any = {};
     
     if (docType === 'workerAttendanceDoc') {
@@ -357,7 +344,6 @@ router.delete('/camp/delete-document', authenticateToken, async (req, res) => {
   }
 });
 
-// קבלת דוחות נוכחות של קייטנות לפי רכז
 router.get('/camp/coordinator/:coordinatorId', getCampAttendanceByCoordinator);
 
 // קבלת דוחות נוכחות של קייטנות לפי כיתה
@@ -435,31 +421,34 @@ router.post('/camp-with-files', authenticateToken, upload.fields([
   { name: 'controlFiles', maxCount: 5 }
 ]), createCampAttendanceWithFiles);
 
-// עדכון סטטוס של מסמך נוכחות
-
-
-// יצירת URL למסמך ספציפי
-router.get('/document/:id/url', authenticateToken, async (req, res) => {
+router.patch('/camp/document-status', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    const doc = await AttendanceDocument.findById(id);
-    if (!doc) {
+    const { documentId, newStatus } = req.body;
+
+    if (!documentId || !newStatus) {
+      res.status(400).json({ error: 'חסרים שדות חובה' });
+      return;
+    }
+
+    const updatedDoc = await AttendanceDocument.findByIdAndUpdate(
+      documentId,
+      { status: newStatus },
+      { new: true }
+    );
+
+    if (!updatedDoc) {
       res.status(404).json({ error: 'מסמך לא נמצא' });
       return;
     }
 
-    if (!doc.s3Key) {
-      res.status(400).json({ error: 'אין מפתח S3 למסמך' });
-      return;
-    }
+    res.status(200).json({
+      message: 'סטטוס המסמך עודכן בהצלחה',
+      document: updatedDoc
+    });
 
-    const url = await getSignedUrl(doc.s3Key);
-    res.json({ url });
-    
-  } catch (error) {
-    console.error('שגיאה ביצירת URL למסמך:', error);
-    res.status(500).json({ error: 'שגיאה ביצירת URL' });
+  } catch (err: any) {
+    console.error('שגיאה בעדכון סטטוס מסמך:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

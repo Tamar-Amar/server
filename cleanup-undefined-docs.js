@@ -2,20 +2,17 @@ const mongoose = require('mongoose');
 const AWS = require('aws-sdk');
 require('dotenv').config();
 
-// הגדרת AWS S3
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   region: process.env.AWS_REGION || 'us-east-1'
 });
 
-// חיבור למסד הנתונים
 mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/leadtay', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-// סכמת המסמך
 const DocumentSchema = new mongoose.Schema({
   operatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Operator', required: true },
   tag: { type: String },
@@ -33,7 +30,6 @@ const DocumentSchema = new mongoose.Schema({
 
 const Document = mongoose.model('Document', DocumentSchema, 'documents-collections');
 
-// פונקציה למחיקת קובץ מ-S3
 async function deleteFileFromS3(s3Key) {
   try {
     const params = {
@@ -52,7 +48,6 @@ async function deleteFileFromS3(s3Key) {
 async function cleanupUndefinedTags() {
   try {
     
-    // מצא מסמכים עם תג undefined או ריק
     const documentsToDelete = await Document.find({
       $or: [
         { tag: { $exists: false } },
@@ -68,7 +63,6 @@ async function cleanupUndefinedTags() {
       return;
     }
 
-    // מחק את הקבצים מ-S3
     let s3DeleteSuccess = 0;
     let s3DeleteFailed = 0;
 
@@ -98,5 +92,4 @@ async function cleanupUndefinedTags() {
   }
 }
 
-// הרץ את הסקריפט
 cleanupUndefinedTags(); 

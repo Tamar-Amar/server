@@ -8,7 +8,6 @@ export const addWorker = async (req: Request, res: Response): Promise<void> => {
   try {
     const workerData = req.body;
 
-    // נרמול התפקיד אם קיים
     if (workerData.roleName) {
       workerData.roleName = workerData.roleName.trim().replace(/\s+/g, ' ');
     }
@@ -70,7 +69,6 @@ export const updateWorker = async (req: Request, res: Response): Promise<void> =
     const updatedData = req.body;
     updatedData.updateDate = new Date();
 
-    // נרמול התפקיד אם קיים
     if (updatedData.roleName) {
       updatedData.roleName = updatedData.roleName.trim().replace(/\s+/g, ' ');
     }
@@ -174,7 +172,6 @@ export const addMultipleWorkers = async (req: Request, res: Response): Promise<v
       return;
     }
     
-    // נרמול התפקידים לכל העובדים
     const normalizedWorkers = workers.map((worker: any) => {
       if (worker.roleName) {
         worker.roleName = worker.roleName.trim().replace(/\s+/g, ' ');
@@ -329,18 +326,16 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
 
     const coordinatorInstitutionCodes = coordinator.projectCodes.map((pc: any) => pc.institutionCode);
     
-
+    
     const classes = await Class.find({
       institutionCode: { $in: coordinatorInstitutionCodes }
     });
     
 
-    
     const workersWithClassInfo: any[] = [];
     classes.forEach(cls => {
       if (cls.workers) {
         cls.workers.forEach((worker: any) => {
-          
           const coordinatorProjectCodes = coordinator.projectCodes
             .filter((pc: any) => pc.institutionCode === cls.institutionCode)
             .map((pc: any) => pc.projectCode);
@@ -351,21 +346,19 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
               classSymbol: cls.uniqueSymbol,
               className: cls.name,
               project: worker.project,
-              roleType: worker.roleType
+              roleName: worker.roleName
             });
           }
         });
       }
     });
 
-    
     const workerIds = workersWithClassInfo.map(w => w.workerId);
     const workers = await WorkerAfterNoon.find({
       _id: { $in: workerIds },
       isActive: true
     }).sort({ lastName: 1, firstName: 1 });
 
-    
     const Document = require('../models/Document').default;
     const documentsCounts = await Document.aggregate([
       {
@@ -381,24 +374,19 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
       }
     ]);
 
-    
     const documentsMap = new Map();
     documentsCounts.forEach((doc: any) => {
       documentsMap.set(doc._id.toString(), doc.count);
     });
 
-    
     const workersWithDetails = workers.map(worker => {
       const classInfo = workersWithClassInfo.find(w => w.workerId.toString() === (worker._id as any).toString());
-      
       const workerClass = classes.find(cls => cls.uniqueSymbol === classInfo?.classSymbol);
       
-      
       let normalizedRoleName = worker.roleName;
-      if (!normalizedRoleName && classInfo?.roleType) {
-        normalizedRoleName = classInfo.roleType;
+      if (!normalizedRoleName && classInfo?.roleName) {
+        normalizedRoleName = classInfo.roleName;
       }
-      
       if (normalizedRoleName) {
         normalizedRoleName = normalizedRoleName.trim().replace(/\s+/g, ' ');
       }
@@ -408,14 +396,12 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
         classSymbol: classInfo?.classSymbol || '',
         className: classInfo?.className || '',
         project: classInfo?.project || null,
-        roleType: classInfo?.roleType || '',
         roleName: normalizedRoleName || '',
         institutionCode: workerClass?.institutionCode || '',
         documentsCount: documentsMap.get((worker._id as any).toString()) || 0
       };
     });
 
-    
     workersWithDetails.sort((a, b) => {
       const lastNameComparison = (a.lastName || '').localeCompare(b.lastName || '', 'he');
       if (lastNameComparison !== 0) {
@@ -435,7 +421,6 @@ export const getWorkersByAccountant = async (req: Request, res: Response): Promi
   try {
     const { accountantId } = req.params;
     
-
     const User = require('../models/User').default;
     const accountant = await User.findById(accountantId);
     
@@ -444,24 +429,19 @@ export const getWorkersByAccountant = async (req: Request, res: Response): Promi
       return;
     }
 
-    
     if (!accountant.accountantInstitutionCodes || accountant.accountantInstitutionCodes.length === 0) {
       res.status(200).json([]);
       return;
     }
 
-    
     const workers = await WorkerAfterNoon.find({
       isActive: true
     }).sort({ lastName: 1, firstName: 1 });
 
-    
     const filteredWorkers = workers.filter(worker => {
-      
       return accountant.accountantInstitutionCodes.includes(worker.accountantCode);
     });
 
-    
     const Document = require('../models/Document').default;
     const workerIds = filteredWorkers.map(w => w._id);
     const documentsCounts = await Document.aggregate([
@@ -478,13 +458,11 @@ export const getWorkersByAccountant = async (req: Request, res: Response): Promi
       }
     ]);
 
-    
     const documentsMap = new Map();
     documentsCounts.forEach((doc: any) => {
       documentsMap.set(doc._id.toString(), doc.count);
     });
 
-    
     const workersWithDetails = filteredWorkers.map(worker => ({
       ...worker.toObject(),
       documentsCount: documentsMap.get((worker._id as any).toString()) || 0
@@ -586,7 +564,7 @@ export const updateGeneralWorkers = async (req: Request, res: Response): Promise
             newClass.workers.push({
               workerId: worker._id,
               project: projectCode,
-              roleType: roleName || 'לא נבחר'
+              roleName: roleName || 'לא נבחר'
             });
             await newClass.save();
             

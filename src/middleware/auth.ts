@@ -14,6 +14,15 @@ declare global {
   }
 }
 
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    role: string;
+    idNumber?: string;
+    username?: string;
+  };
+}
+
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
