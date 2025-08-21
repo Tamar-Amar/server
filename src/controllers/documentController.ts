@@ -14,7 +14,6 @@ const generateFileName = (tz: string, documentType: string, originalName: string
   const date = new Date().toISOString().split('T')[0];
   const baseName = `${tz}-${date}`;
   
-  // חילוץ הסיומת מהשם המקורי
   const lastDotIndex = originalName.lastIndexOf('.');
   const extension = lastDotIndex > 0 ? originalName.substring(lastDotIndex) : '';
   
@@ -64,7 +63,6 @@ export const uploadDocument: RequestHandler = async (req: RequestWithUser, res, 
       return;
     }
 
-    // בדיקה נוספת ש-documentType לא undefined או ריק
     if (!documentType || documentType === 'undefined' || documentType.trim() === '') {
       res.status(400).json({ error: 'סוג מסמך לא תקין או חסר' });
       return;
@@ -229,13 +227,11 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
   try {
     const { coordinatorId } = req.params;
     
-    // בדיקה שהמשתמש הוא רכז או מנהל
     if (req.user?.role !== 'coordinator' && req.user?.role !== 'admin' && req.user?.role !== 'manager_project' && req.user?.role !== 'accountant') {
       res.status(403).json({ error: 'אין לך הרשאה לגשת למסמכים אלה' });
       return;
     }
 
-    // אם המשתמש הוא רכז, וודא שהוא מנסה לגשת למסמכים של העובדים שלו
     if (req.user?.role === 'coordinator' && req.user?.id !== coordinatorId) {
       res.status(403).json({ error: 'אין לך הרשאה לגשת למסמכים של רכז אחר' });
       return;
@@ -249,7 +245,6 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
       'אישור וותק'
     ];
 
-    // קבלת פרטי הרכז
     const User = require('../models/User').default;
     const coordinator = await User.findById(coordinatorId);
     
@@ -258,27 +253,22 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
       return;
     }
 
-    // אם אין שיוכי פרויקטים, החזר מערך ריק
     if (!coordinator.projectCodes || coordinator.projectCodes.length === 0) {
       res.status(200).json([]);
       return;
     }
 
-    // יצירת רשימת קודי מוסד של הרכז
     const coordinatorInstitutionCodes = coordinator.projectCodes.map((pc: any) => pc.institutionCode);
     
-    // מציאת כל הכיתות של קודי המוסד של הרכז
     const Class = require('../models/Class').default;
     const classes = await Class.find({
       institutionCode: { $in: coordinatorInstitutionCodes }
     });
 
-    // יצירת רשימת עובדים עם פרטי הכיתה
     const workersWithClassInfo: any[] = [];
     classes.forEach((cls: any) => {
       if (cls.workers) {
         cls.workers.forEach((worker: any) => {
-          // בדיקה שהעובד שייך לפרויקט שהרכז אחראי עליו
           const coordinatorProjectCodes = coordinator.projectCodes
             .filter((pc: any) => pc.institutionCode === cls.institutionCode)
             .map((pc: any) => pc.projectCode);
@@ -296,7 +286,6 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
       }
     });
 
-    // קבלת פרטי העובדים
     const workerIds = workersWithClassInfo.map(w => w.workerId);
     const WorkerAfterNoonModel = require('../models/WorkerAfterNoon').default;
     const workers = await WorkerAfterNoonModel.find({
@@ -311,13 +300,11 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
 
     const activeWorkerIds = workers.map((worker: any) => worker._id);
 
-    // קבלת כל המסמכים האישיים של העובדים
     const documents: Document[] = await DocumentModel.find({ 
       operatorId: { $in: activeWorkerIds },
       tag: { $in: personalDocTags }
     }).lean();
 
-    // הוספת URLs למסמכים
     for (const doc of documents as any[]) {
       if (doc.s3Key) {
         doc.url = await getSignedUrl(doc.s3Key as string);
@@ -336,13 +323,11 @@ export const getCoordinatorWorkerDocuments: RequestHandler = async (req: Request
 
 export const cleanupUndefinedTags: RequestHandler = async (req: RequestWithUser, res, next) => {
   try {
-    // בדיקה שהמשתמש הוא מנהל
     if (req.user?.role !== 'admin' && req.user?.role !== 'manager_project') {
       res.status(403).json({ error: 'אין לך הרשאה לבצע פעולה זו' });
       return;
     }
 
-    // מצא מסמכים עם תג undefined או ריק
     const documentsToDelete = await DocumentModel.find({
       $or: [
         { tag: { $exists: false } },
@@ -358,7 +343,6 @@ export const cleanupUndefinedTags: RequestHandler = async (req: RequestWithUser,
       return;
     }
 
-    // מחק את המסמכים מ-S3
     for (const doc of documentsToDelete) {
       try {
         await deleteFileFromS3(doc.s3Key as string);
@@ -367,7 +351,6 @@ export const cleanupUndefinedTags: RequestHandler = async (req: RequestWithUser,
       }
     }
 
-    // מחק את המסמכים מהמסד נתונים
     const deleteResult = await DocumentModel.deleteMany({
       $or: [
         { tag: { $exists: false } },

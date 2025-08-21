@@ -1,13 +1,11 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// חיבור למסד הנתונים
 mongoose.connect(process.env.MONGO_URI , {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-// הגדרת המודלים
 const ClassSchema = new mongoose.Schema({
   address: { type: String, required: false },
   street: { type: String, required: false },
@@ -64,7 +62,6 @@ async function updateClassesRoleName() {
   try {
     console.log('מתחיל עדכון מבנה עובדים בכיתות...');
     
-    // מציאת כל הכיתות שיש להן עובדים
     const classesWithWorkers = await Class.find({
       'workers.0': { $exists: true },
       'workers.0.workerId': { $exists: true }
@@ -77,12 +74,10 @@ async function updateClassesRoleName() {
     
     for (const classDoc of classesWithWorkers) {
       try {
-        // יצירת מערך עובדים חדש עם המבנה הנכון
         const updatedWorkers = [];
         
         for (const worker of classDoc.workers) {
           if (worker.workerId) {
-            // מציאת העובד במסד הנתונים
             const workerDoc = await WorkerAfterNoon.findById(worker.workerId);
             
             if (workerDoc) {
@@ -101,7 +96,6 @@ async function updateClassesRoleName() {
           }
         }
         
-        // עדכון הכיתה עם המבנה החדש
         await Class.findByIdAndUpdate(classDoc._id, {
           $set: { workers: updatedWorkers }
         });
@@ -128,5 +122,4 @@ async function updateClassesRoleName() {
   }
 }
 
-// הרצת הסקריפט
 updateClassesRoleName();

@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// הגדרת המודלים
 const ClassSchema = new mongoose.Schema({
   address: { type: String, required: false },
   street: { type: String, required: false },
@@ -108,7 +107,6 @@ async function migrateToWorkerAssignments() {
   try {
     console.log('מתחיל מיגרציה למבנה חיבורים חדש...');
     
-    // חיבור למסד הנתונים
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -116,7 +114,6 @@ async function migrateToWorkerAssignments() {
     
     console.log('✓ התחבר למסד הנתונים');
     
-    // מציאת כל הכיתות שיש להן עובדים
     const classesWithWorkers = await Class.find({
       'workers.0': { $exists: true },
       'workers.0.workerId': { $exists: true }
@@ -135,7 +132,6 @@ async function migrateToWorkerAssignments() {
         for (const worker of classDoc.workers) {
           if (worker.workerId) {
             try {
-              // בדיקה אם החיבור כבר קיים
               const existingAssignment = await WorkerAssignment.findOne({
                 workerId: worker.workerId,
                 classId: classDoc._id,
@@ -147,27 +143,22 @@ async function migrateToWorkerAssignments() {
                 continue;
               }
               
-              // קבלת פרטי העובד
               const workerDoc = await WorkerAfterNoon.findById(worker.workerId);
               if (!workerDoc) {
                 console.log(`  - ⚠️ עובד לא נמצא: ${worker.workerId}`);
                 continue;
               }
               
-              // קביעת תאריכי התחלה וסיום לפי פרויקט
               let startDate, endDate;
               
               if (worker.project === 4) {
-                // פרויקט 4 - קייטנת קיץ 2025
                 startDate = new Date('2025-07-01'); // 1 ביולי 2025
                 endDate = new Date('2025-07-31');   // 31 ביולי 2025
               } else {
-                // פרויקטים אחרים - משתמש בתאריכי העובד או תאריך נוכחי
                 startDate = workerDoc.startDate || new Date();
                 endDate = workerDoc.endDate;
               }
               
-              // יצירת חיבור חדש
               const assignment = new WorkerAssignment({
                 workerId: worker.workerId,
                 classId: classDoc._id,
@@ -207,7 +198,6 @@ async function migrateToWorkerAssignments() {
     console.log(`שגיאות: ${errorCount}`);
     console.log('========================');
     
-    // בדיקה שהמיגרציה הצליחה
     const totalAssignmentsInDB = await WorkerAssignment.countDocuments();
     console.log(`\nסך הכל חיבורים במסד הנתונים: ${totalAssignmentsInDB}`);
     
@@ -229,5 +219,4 @@ async function migrateToWorkerAssignments() {
   }
 }
 
-// הרצת המיגרציה
 migrateToWorkerAssignments();

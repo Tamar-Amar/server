@@ -8,7 +8,6 @@ export const addWorker = async (req: Request, res: Response): Promise<void> => {
   try {
     const workerData = req.body;
 
-    // נרמול התפקיד אם קיים
     if (workerData.roleName) {
       workerData.roleName = workerData.roleName.trim().replace(/\s+/g, ' ');
     }
@@ -70,7 +69,6 @@ export const updateWorker = async (req: Request, res: Response): Promise<void> =
     const updatedData = req.body;
     updatedData.updateDate = new Date();
 
-    // נרמול התפקיד אם קיים
     if (updatedData.roleName) {
       updatedData.roleName = updatedData.roleName.trim().replace(/\s+/g, ' ');
     }
@@ -156,7 +154,6 @@ export const addMultipleWorkers = async (req: Request, res: Response): Promise<v
   try {
     const workers = req.body;
     
-    // נרמול התפקידים לכל העובדים
     const normalizedWorkers = workers.map((worker: any) => {
       if (worker.roleName) {
         worker.roleName = worker.roleName.trim().replace(/\s+/g, ' ');
@@ -181,7 +178,6 @@ export const validateWorkersExist = async (req: Request, res: Response): Promise
       return;
     }
 
-    // מצא את כל העובדים הקיימים
     const existingWorkers = await WorkerAfterNoon.find({ id: { $in: workerIds } }).lean();
     const existingIds = existingWorkers.map(w => w.id);
 
@@ -208,7 +204,6 @@ export const updateBatchWorkers = async (req: Request, res: Response): Promise<v
       try {
         const { id, newValue } = update;
         
-        // מצא את העובד לפי תעודת זהות
         const worker = await WorkerAfterNoon.findOne({ id: id });
         
         if (!worker) {
@@ -218,14 +213,12 @@ export const updateBatchWorkers = async (req: Request, res: Response): Promise<v
 
         const oldValue = worker.get(field);
         
-        // טיפול מיוחד בשדות בוליאניים
         let valueToSet = newValue;
         if (field === 'is101' || field === 'isActive') {
           const stringValue = String(newValue).toLowerCase();
           valueToSet = stringValue === 'יש' || stringValue === 'true' || stringValue === 'כן' || stringValue === '1';
         }
         
-        // טיפול מיוחד ב-projectCodes
         if (field === 'projectCodes') {
           if (Array.isArray(newValue)) {
             valueToSet = newValue;
@@ -235,12 +228,10 @@ export const updateBatchWorkers = async (req: Request, res: Response): Promise<v
           }
         }
         
-        // נרמול התפקיד אם זה השדה שמתעדכן
         if (field === 'roleName' && typeof newValue === 'string') {
           valueToSet = newValue.trim().replace(/\s+/g, ' ');
         }
         
-        // עדכן את השדה
         worker.set(field, valueToSet);
         worker.updateDate = new Date();
         
@@ -275,7 +266,6 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
   try {
     const { coordinatorId } = req.params;
     
-    // קבלת פרטי הרכז
     const User = require('../models/User').default;
     const coordinator = await User.findById(coordinatorId);
     
@@ -285,29 +275,24 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
       return;
     }
 
-    // אם אין שיוכי פרויקטים, החזר מערך ריק
     if (!coordinator.projectCodes || coordinator.projectCodes.length === 0) {
       
       res.status(200).json([]);
       return;
     }
 
-    // יצירת רשימת קודי מוסד של הרכז
     const coordinatorInstitutionCodes = coordinator.projectCodes.map((pc: any) => pc.institutionCode);
     
     
-    // מציאת כל הכיתות של קודי המוסד של הרכז
     const classes = await Class.find({
       institutionCode: { $in: coordinatorInstitutionCodes }
     });
     
 
-    // יצירת רשימת עובדים עם פרטי הכיתה
     const workersWithClassInfo: any[] = [];
     classes.forEach(cls => {
       if (cls.workers) {
         cls.workers.forEach((worker: any) => {
-          // בדיקה שהעובד שייך לפרויקט שהרכז אחראי עליו
           const coordinatorProjectCodes = coordinator.projectCodes
             .filter((pc: any) => pc.institutionCode === cls.institutionCode)
             .map((pc: any) => pc.projectCode);
@@ -325,14 +310,12 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
       }
     });
 
-    // קבלת פרטי העובדים
     const workerIds = workersWithClassInfo.map(w => w.workerId);
     const workers = await WorkerAfterNoon.find({
       _id: { $in: workerIds },
       isActive: true
     }).sort({ lastName: 1, firstName: 1 });
 
-    // קבלת מספר הטפסים לכל עובד
     const Document = require('../models/Document').default;
     const documentsCounts = await Document.aggregate([
       {
@@ -348,24 +331,19 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
       }
     ]);
 
-    // יצירת מפה של מספר טפסים לכל עובד
     const documentsMap = new Map();
     documentsCounts.forEach((doc: any) => {
       documentsMap.set(doc._id.toString(), doc.count);
     });
 
-    // שילוב פרטי העובדים עם פרטי הכיתה ומספר הטפסים
     const workersWithDetails = workers.map(worker => {
       const classInfo = workersWithClassInfo.find(w => w.workerId.toString() === (worker._id as any).toString());
-      // מציאת הכיתה כדי לקבל את קוד המוסד
       const workerClass = classes.find(cls => cls.uniqueSymbol === classInfo?.classSymbol);
       
-      // נרמול התפקיד - עדיפות ל-roleName של העובד, אם לא קיים אז roleType מהכיתה
       let normalizedRoleName = worker.roleName;
       if (!normalizedRoleName && classInfo?.roleName) {
         normalizedRoleName = classInfo.roleName;
       }
-      // נרמול התפקיד - הסרת רווחים מיותרים
       if (normalizedRoleName) {
         normalizedRoleName = normalizedRoleName.trim().replace(/\s+/g, ' ');
       }
@@ -381,7 +359,6 @@ export const getWorkersByCoordinator = async (req: Request, res: Response): Prom
       };
     });
 
-    // מיון לפי שם משפחה ואז שם פרטי
     workersWithDetails.sort((a, b) => {
       const lastNameComparison = (a.lastName || '').localeCompare(b.lastName || '', 'he');
       if (lastNameComparison !== 0) {
@@ -401,7 +378,6 @@ export const getWorkersByAccountant = async (req: Request, res: Response): Promi
   try {
     const { accountantId } = req.params;
     
-    // קבלת פרטי חשב השכר
     const User = require('../models/User').default;
     const accountant = await User.findById(accountantId);
     
@@ -410,24 +386,19 @@ export const getWorkersByAccountant = async (req: Request, res: Response): Promi
       return;
     }
 
-    // אם אין קודי מוסד, החזר מערך ריק
     if (!accountant.accountantInstitutionCodes || accountant.accountantInstitutionCodes.length === 0) {
       res.status(200).json([]);
       return;
     }
 
-    // מציאת כל העובדים של קודי המוסד של חשב השכר
     const workers = await WorkerAfterNoon.find({
       isActive: true
     }).sort({ lastName: 1, firstName: 1 });
 
-    // סינון עובדים לפי קודי המוסד של חשב השכר
     const filteredWorkers = workers.filter(worker => {
-      // בדיקה אם העובד שייך לאחד מקודי המוסד של חשב השכר
       return accountant.accountantInstitutionCodes.includes(worker.accountantCode);
     });
 
-    // קבלת מספר הטפסים לכל עובד
     const Document = require('../models/Document').default;
     const workerIds = filteredWorkers.map(w => w._id);
     const documentsCounts = await Document.aggregate([
@@ -444,13 +415,11 @@ export const getWorkersByAccountant = async (req: Request, res: Response): Promi
       }
     ]);
 
-    // יצירת מפה של מספר טפסים לכל עובד
     const documentsMap = new Map();
     documentsCounts.forEach((doc: any) => {
       documentsMap.set(doc._id.toString(), doc.count);
     });
 
-    // הוספת מספר הטפסים לכל עובד
     const workersWithDetails = filteredWorkers.map(worker => ({
       ...worker.toObject(),
       documentsCount: documentsMap.get((worker._id as any).toString()) || 0

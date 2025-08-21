@@ -156,7 +156,6 @@ export const logAuth = async (req: Request, res: Response): Promise<void> => {
       recordLoginAttempt(username, true);
       logSecurityEvent('OPERATOR_LOGIN_SUCCESS', { username, ip: clientIP });
 
-      // עדכון זמן התחברות אחרון
       operator.lastLogin = new Date();
       await operator.save();
 
@@ -276,7 +275,6 @@ export const verifyWorkerCode = async (req: Request, res: Response): Promise<voi
       return;
     }
     
-    // עדכון זמן התחברות אחרון
     worker.lastLogin = new Date();
     await worker.save();
     
@@ -328,13 +326,11 @@ export const coordinatorVerify = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // בדיקה שהמשתמש הוא רכז או חשב שכר
     if (user.role !== 'coordinator' && user.role !== 'accountant' && user.role !== 'admin' && user.role !== 'manager_project') {
       res.status(403).json({ message: 'אין לך הרשאה לגשת למערכת זו' });
       return;
     }
 
-    // יצירת קוד אימות
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 דקות
 
@@ -343,7 +339,6 @@ export const coordinatorVerify = async (req: Request, res: Response): Promise<vo
       expiresAt
     };
 
-    // שליחת אימייל עם קוד האימות
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
@@ -399,7 +394,6 @@ export const coordinatorLogin = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // בדיקת קוד האימות
     const verificationData = coordinatorVerificationCodes[username];
     if (!verificationData) {
       res.status(400).json({ message: 'לא נמצא קוד אימות. אנא בקש קוד חדש' });
@@ -417,7 +411,6 @@ export const coordinatorLogin = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // מחיקת הקוד לאחר שימוש מוצלח
     delete coordinatorVerificationCodes[username];
 
     user.lastLogin = new Date();
@@ -887,7 +880,6 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
       return;
     }
 
-    // נטען את כל קודי המוסד הקיימים
     const ClassModel = require('../models/Class').default;
     const allClasses = await ClassModel.find({}, 'institutionCode');
     const validInstitutionCodes = new Set(allClasses.map((cls: any) => cls.institutionCode));
@@ -940,7 +932,6 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
         }
         const defaultPassword = idNumber; // הסיסמה היא התז שלהם
         const hashedPassword = await hashPassword(defaultPassword);
-        // אם קוד מוסד קיים - נכניס projectCodes, אחרת לא
         let projectCodes: any[] = [];
         if (validInstitutionCodes.has(institutionCode)) {
           projectCodes = [{
@@ -987,7 +978,6 @@ export const importCoordinators = async (req: AuthenticatedRequest, res: Respons
 
 export const impersonateUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // נשתמש ב-casting כדי לקבל את user
     const user = req.user;
     if (!user || (user.role !== 'admin' && user.role !== 'manager_project')) {
       res.status(403).json({ message: 'גישה אסורה' });
@@ -999,7 +989,6 @@ export const impersonateUser = async (req: AuthenticatedRequest, res: Response) 
       res.status(404).json({ message: 'משתמש לא נמצא' });
       return;
     }
-    // צור טוקן חדש עבור המשתמש
     const token = jwt.sign(
       {
         id: userDoc._id,

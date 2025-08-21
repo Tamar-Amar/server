@@ -54,7 +54,6 @@ export const createCampAttendance: RequestHandler = async (req, res) => {
   }
 };
 
-// פונקציה חדשה לשליפת דוחות campAttendance
 export const getCampAttendance: RequestHandler = async (req, res) => {
   try {
     const campAttendances = await CampAttendance.find()
@@ -83,12 +82,10 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
         select: 'fileName fileType s3Key uploadedAt status comments tz type'
       });
     
-    // הוספת URL חתום לכל מסמך
     const campAttendancesWithUrls = await Promise.all(
       campAttendances.map(async (record) => {
         const recordObj = record.toObject();
         
-        // פונקציה עזר להוספת URL למסמך
         const addUrlToDoc = async (doc: any) => {
           if (doc && doc.s3Key) {
             try {
@@ -101,7 +98,6 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
           return doc;
         };
         
-        // הוספת URL לכל המסמכים
         recordObj.workerAttendanceDoc = await addUrlToDoc(recordObj.workerAttendanceDoc);
         recordObj.studentAttendanceDoc = await addUrlToDoc(recordObj.studentAttendanceDoc);
         recordObj.controlDocs = await Promise.all(recordObj.controlDocs?.map(addUrlToDoc) || []);
@@ -119,7 +115,6 @@ export const getCampAttendance: RequestHandler = async (req, res) => {
   }
 }; 
 
-// פונקציה לעדכון דוח CampAttendance עם מסמך חדש
 export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
   try {
     const { id } = req.params;
@@ -131,7 +126,6 @@ export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
       return;
     }
     
-    // בדיקה שהדוח קיים
     const campAttendance = await CampAttendance.findById(id);
     if (!campAttendance) {
       logErrorToFile('לא נמצא דוח CampAttendance עם ID: ' + id);
@@ -139,7 +133,6 @@ export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
       return;
     }
     
-    // עדכון השדה המתאים
     let updateData: any = {};
     
     if (docType === 'workerAttendanceDoc') {
@@ -147,7 +140,6 @@ export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
     } else if (docType === 'studentAttendanceDoc') {
       updateData.studentAttendanceDoc = documentId;
     } else if (docType === 'controlDocs') {
-      // הוספה למערך controlDocs
       updateData.$push = { controlDocs: documentId };
     } else {
       logErrorToFile('סוג מסמך לא תקין: ' + docType);
@@ -155,7 +147,6 @@ export const updateCampAttendanceDoc: RequestHandler = async (req, res) => {
       return;
     }
     
-    // עדכון הדוח
     const updatedCampAttendance = await CampAttendance.findByIdAndUpdate(
       id,
       updateData,
@@ -187,23 +178,19 @@ export const  createCampAttendanceWithFiles = async (req: Request, res: Response
       month 
     } = req.body;
 
-    // בדיקת שדות חובה
     if (!projectCode || !classId || !coordinatorId || !leaderId || !month) {
       res.status(400).json({ error: 'חסרים שדות חובה' });
       return;
     }
 
-    // בדיקה שיש לפחות קובץ אחד
     const files = req.files as any;
     if (!files || (!files.workerFile && !files.studentFile && (!files.controlFiles || files.controlFiles.length === 0))) {
       res.status(400).json({ error: 'יש להעלות לפחות מסמך אחד' });
       return;
     }
 
-    // העלאת קבצים ל-S3 ויצירת מסמכי נוכחות
     const uploadedDocs: any[] = [];
 
-    // העלאת דוח עובדים
     if (files.workerFile) {
       const workerFile = Array.isArray(files.workerFile) ? files.workerFile[0] : files.workerFile;
       const fileName = `נוכחות עובדים - ${month}`;
@@ -227,7 +214,6 @@ export const  createCampAttendanceWithFiles = async (req: Request, res: Response
       uploadedDocs.push({ type: 'workerAttendanceDoc', docId: workerDoc._id });
     }
 
-    // העלאת דוח תלמידים
     if (files.studentFile) {
       const studentFile = Array.isArray(files.studentFile) ? files.studentFile[0] : files.studentFile;
       const fileName = `נוכחות תלמידים - ${month}`;
@@ -251,7 +237,6 @@ export const  createCampAttendanceWithFiles = async (req: Request, res: Response
       uploadedDocs.push({ type: 'studentAttendanceDoc', docId: studentDoc._id });
     }
 
-    // העלאת דוחות בקרה
     const controlDocIds: Types.ObjectId[] = [];
     if (files.controlFiles) {
       const controlFiles = Array.isArray(files.controlFiles) ? files.controlFiles : [files.controlFiles];
@@ -280,7 +265,6 @@ export const  createCampAttendanceWithFiles = async (req: Request, res: Response
       }
     }
 
-    // יצירת רשומת CampAttendance
     const campAttendanceData: any = {
       projectCode: parseInt(projectCode),
       classId: new Types.ObjectId(classId),
@@ -289,7 +273,6 @@ export const  createCampAttendanceWithFiles = async (req: Request, res: Response
       month
     };
 
-    // הוספת מסמכים לרשומה
     uploadedDocs.forEach(({ type, docId }) => {
       campAttendanceData[type] = docId;
     });
@@ -321,7 +304,6 @@ export const deleteCampAttendanceDocument = async (req: Request, res: Response):
       return;
     }
 
-    // בדיקה שהדוח קיים
     const campAttendance = await CampAttendance.findById(recordId);
     if (!campAttendance) {
       res.status(404).json({ error: 'דוח לא נמצא' });
@@ -330,7 +312,6 @@ export const deleteCampAttendanceDocument = async (req: Request, res: Response):
 
     let documentId: string | undefined;
 
-    // קבלת מזהה המסמך לפי הסוג
     if (docType === 'workerAttendanceDoc') {
       documentId = campAttendance.workerAttendanceDoc?.toString();
     } else if (docType === 'studentAttendanceDoc') {
@@ -351,7 +332,6 @@ export const deleteCampAttendanceDocument = async (req: Request, res: Response):
       return;
     }
 
-    // מחיקת המסמך מ-S3 ומהדאטהבייס
     const attendanceDoc = await AttendanceDocument.findById(documentId);
     if (attendanceDoc) {
       if (attendanceDoc.s3Key) {
@@ -360,7 +340,6 @@ export const deleteCampAttendanceDocument = async (req: Request, res: Response):
       await AttendanceDocument.findByIdAndDelete(documentId);
     }
 
-    // עדכון רשומת CampAttendance
     let updateData: any = {};
     
     if (docType === 'workerAttendanceDoc') {
@@ -403,14 +382,12 @@ export const deleteCampAttendanceRecord: RequestHandler = async (req, res) => {
       return;
     }
 
-    // בדיקה שהדוח קיים
     const campAttendance = await CampAttendance.findById(recordId);
     if (!campAttendance) {
       res.status(404).json({ error: 'דוח לא נמצא' });
       return;
     }
 
-    // מחיקת כל המסמכים המשויכים
     const documentsToDelete = [];
 
     if (campAttendance.workerAttendanceDoc) {
@@ -423,7 +400,6 @@ export const deleteCampAttendanceRecord: RequestHandler = async (req, res) => {
       documentsToDelete.push(...campAttendance.controlDocs.map(doc => doc.toString()));
     }
 
-    // מחיקת המסמכים מ-S3 ומהדאטהבייס
     for (const docId of documentsToDelete) {
       const attendanceDoc = await AttendanceDocument.findById(docId);
       if (attendanceDoc) {
@@ -434,7 +410,6 @@ export const deleteCampAttendanceRecord: RequestHandler = async (req, res) => {
       }
     }
 
-    // מחיקת הדוח עצמו
     await CampAttendance.findByIdAndDelete(recordId);
 
     res.status(200).json({

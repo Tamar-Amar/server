@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// הגדרת המודלים
 const ClassSchema = new mongoose.Schema({
   workers: [{
     workerId: { type: mongoose.Schema.Types.ObjectId, ref: 'WorkerAfterNoon' },
@@ -29,7 +28,6 @@ async function verifyMigration() {
   try {
     console.log('מתחיל בדיקת מיגרציה...');
     
-    // חיבור למסד הנתונים
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -37,7 +35,6 @@ async function verifyMigration() {
     
     console.log('✓ התחבר למסד הנתונים');
     
-    // ספירת חיבורים במבנה החדש
     const totalAssignments = await WorkerAssignment.countDocuments();
     const activeAssignments = await WorkerAssignment.countDocuments({ isActive: true });
     
@@ -45,7 +42,6 @@ async function verifyMigration() {
     console.log(`סך הכל חיבורים: ${totalAssignments}`);
     console.log(`חיבורים פעילים: ${activeAssignments}`);
     
-    // בדיקת חיבורים לפי פרויקט
     const projectStats = await WorkerAssignment.aggregate([
       {
         $group: {
@@ -66,7 +62,6 @@ async function verifyMigration() {
       console.log(`פרויקט ${stat._id}: ${stat.count} חיבורים (${stat.activeCount} פעילים)`);
     });
     
-    // בדיקת חיבורים לפי תפקיד
     const roleStats = await WorkerAssignment.aggregate([
       {
         $group: {
@@ -84,7 +79,6 @@ async function verifyMigration() {
       console.log(`${stat._id}: ${stat.count} חיבורים`);
     });
     
-    // בדיקת כיתות עם הכי הרבה עובדים
     const topClasses = await WorkerAssignment.aggregate([
       {
         $group: {
@@ -106,7 +100,6 @@ async function verifyMigration() {
       console.log(`${classDoc?.name || 'לא ידוע'} (${classDoc?.uniqueSymbol || 'לא ידוע'}): ${classStat.workerCount} עובדים`);
     }
     
-    // השוואה עם המבנה הישן
     const classesWithWorkers = await Class.find({
       'workers.0': { $exists: true }
     });
@@ -126,7 +119,6 @@ async function verifyMigration() {
       console.log('⚠️ ייתכן שחלק מהחיבורים לא הועברו');
     }
     
-    // בדיקת חיבורים כפולים
     const duplicateAssignments = await WorkerAssignment.aggregate([
       {
         $group: {
@@ -162,5 +154,4 @@ async function verifyMigration() {
   }
 }
 
-// הרצת הבדיקה
 verifyMigration();

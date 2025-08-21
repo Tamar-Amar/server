@@ -3,7 +3,6 @@ import { Types } from 'mongoose';
 
 export class WorkerAssignmentService {
   
-  // יצירת חיבור חדש
   static async createAssignment(data: {
     workerId: string;
     classId: string;
@@ -28,7 +27,6 @@ export class WorkerAssignmentService {
     return await assignment.save();
   }
 
-  // קבלת כל החיבורים הפעילים של עובד
   static async getWorkerAssignments(workerId: string, isActive: boolean = true): Promise<WorkerAssignmentDocument[]> {
     return await WorkerAssignment.find({
       workerId: new Types.ObjectId(workerId),
@@ -36,7 +34,6 @@ export class WorkerAssignmentService {
     }).populate('classId').populate('workerId');
   }
 
-  // קבלת כל החיבורים הפעילים של כיתה
   static async getClassAssignments(classId: string, isActive: boolean = true): Promise<WorkerAssignmentDocument[]> {
     return await WorkerAssignment.find({
       classId: new Types.ObjectId(classId),
@@ -44,7 +41,6 @@ export class WorkerAssignmentService {
     }).populate('workerId').populate('classId');
   }
 
-  // קבלת חיבורים לפי פרויקט
   static async getProjectAssignments(projectCode: number, isActive: boolean = true): Promise<WorkerAssignmentDocument[]> {
     return await WorkerAssignment.find({
       projectCode: projectCode,
@@ -52,7 +48,6 @@ export class WorkerAssignmentService {
     }).populate('workerId').populate('classId');
   }
 
-  // קבלת חיבורים פעילים בתאריך מסוים
   static async getActiveAssignmentsOnDate(date: Date): Promise<WorkerAssignmentDocument[]> {
     return await WorkerAssignment.find({
       isActive: true,
@@ -64,7 +59,6 @@ export class WorkerAssignmentService {
     }).populate('workerId').populate('classId');
   }
 
-  // עדכון חיבור
   static async updateAssignment(
     assignmentId: string, 
     updates: Partial<WorkerAssignmentDocument>
@@ -76,7 +70,6 @@ export class WorkerAssignmentService {
     ).populate('workerId').populate('classId');
   }
 
-  // סיום חיבור (הגדרת תאריך סיום)
   static async endAssignment(
     assignmentId: string, 
     endDate: Date, 
@@ -94,13 +87,11 @@ export class WorkerAssignmentService {
     ).populate('workerId').populate('classId');
   }
 
-  // מחיקת חיבור
   static async deleteAssignment(assignmentId: string): Promise<boolean> {
     const result = await WorkerAssignment.findByIdAndDelete(assignmentId);
     return !!result;
   }
 
-  // בדיקה אם יש חיבור פעיל בין עובד לכיתה בפרויקט מסוים
   static async hasActiveAssignment(
     workerId: string, 
     classId: string, 
@@ -116,7 +107,6 @@ export class WorkerAssignmentService {
     return !!assignment;
   }
 
-  // קבלת היסטוריית חיבורים של עובד
   static async getWorkerHistory(workerId: string): Promise<WorkerAssignmentDocument[]> {
     return await WorkerAssignment.find({
       workerId: new Types.ObjectId(workerId)
@@ -126,7 +116,6 @@ export class WorkerAssignmentService {
     .populate('classId');
   }
 
-  // קבלת היסטוריית חיבורים של כיתה
   static async getClassHistory(classId: string): Promise<WorkerAssignmentDocument[]> {
     return await WorkerAssignment.find({
       classId: new Types.ObjectId(classId)
@@ -136,7 +125,6 @@ export class WorkerAssignmentService {
     .populate('classId');
   }
 
-  // יצירת חיבורים מרובים
   static async createMultipleAssignments(assignments: Array<{
     workerId: string;
     classId: string;

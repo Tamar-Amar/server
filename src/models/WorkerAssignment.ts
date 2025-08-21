@@ -68,7 +68,6 @@ const WorkerAssignmentSchema: Schema = new Schema({
   toObject: { getters: true }
 });
 
-// נרמול התפקיד לפני שמירה
 WorkerAssignmentSchema.pre('save', function(next) {
   if (typeof this.roleName === 'string') {
     this.roleName = this.roleName.trim().replace(/\s+/g, ' ');
@@ -88,7 +87,6 @@ WorkerAssignmentSchema.pre('findOneAndUpdate', function(next) {
   next();
 });
 
-// אינדקסים לביצועים טובים
 WorkerAssignmentSchema.index({ workerId: 1, isActive: 1 });
 WorkerAssignmentSchema.index({ classId: 1, isActive: 1 });
 WorkerAssignmentSchema.index({ projectCode: 1, isActive: 1 });

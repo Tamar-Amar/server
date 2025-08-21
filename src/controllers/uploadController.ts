@@ -24,7 +24,6 @@ export const uploadFile = async (req: RequestWithUser, res: Response) => {
     const { buffer, originalname, mimetype } = req.file;
     const { tag, documentType } = req.body;
 
-    // בדיקה שיש תג תקין
     const finalTag = tag || documentType;
     if (!finalTag || finalTag === 'undefined' || finalTag.trim() === '') {
       return res.status(400).json({ error: 'Tag is required' });

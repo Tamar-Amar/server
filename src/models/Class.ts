@@ -66,7 +66,6 @@ ClassSchema.pre('save', function (next) {
     this.monthlyBudget = 200;
   }
   
-  // נרמול התפקידים של העובדים
   if (this.workers && Array.isArray(this.workers)) {
     this.workers.forEach(worker => {
       if (worker.roleName) {

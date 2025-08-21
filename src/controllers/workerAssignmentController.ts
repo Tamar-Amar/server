@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { WorkerAssignmentService } from '../services/WorkerAssignmentService';
 import { AuthenticatedRequest } from '../middleware/auth';
 
-// יצירת חיבור חדש
 export const createAssignment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { workerId, classId, projectCode, roleName, startDate, endDate, notes } = req.body;
@@ -30,7 +29,6 @@ export const createAssignment = async (req: AuthenticatedRequest, res: Response)
   }
 };
 
-// קבלת חיבורים של עובד
 export const getWorkerAssignments = async (req: Request, res: Response): Promise<void> => {
   try {
     const { workerId } = req.params;
@@ -48,7 +46,6 @@ export const getWorkerAssignments = async (req: Request, res: Response): Promise
   }
 };
 
-// קבלת חיבורים של כיתה
 export const getClassAssignments = async (req: Request, res: Response): Promise<void> => {
   try {
     const { classId } = req.params;
@@ -66,7 +63,6 @@ export const getClassAssignments = async (req: Request, res: Response): Promise<
   }
 };
 
-// קבלת חיבורים לפי פרויקט
 export const getProjectAssignments = async (req: Request, res: Response): Promise<void> => {
   try {
     const { projectCode } = req.params;
@@ -84,7 +80,6 @@ export const getProjectAssignments = async (req: Request, res: Response): Promis
   }
 };
 
-// קבלת חיבורים פעילים בתאריך מסוים
 export const getActiveAssignmentsOnDate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { date } = req.query;
@@ -102,7 +97,6 @@ export const getActiveAssignmentsOnDate = async (req: Request, res: Response): P
   }
 };
 
-// עדכון חיבור
 export const updateAssignment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { assignmentId } = req.params;
@@ -122,7 +116,6 @@ export const updateAssignment = async (req: AuthenticatedRequest, res: Response)
   }
 };
 
-// סיום חיבור
 export const endAssignment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { assignmentId } = req.params;
@@ -151,7 +144,6 @@ export const endAssignment = async (req: AuthenticatedRequest, res: Response): P
   }
 };
 
-// מחיקת חיבור
 export const deleteAssignment = async (req: Request, res: Response): Promise<void> => {
   try {
     const { assignmentId } = req.params;
@@ -170,7 +162,6 @@ export const deleteAssignment = async (req: Request, res: Response): Promise<voi
   }
 };
 
-// קבלת היסטוריית עובד
 export const getWorkerHistory = async (req: Request, res: Response): Promise<void> => {
   try {
     const { workerId } = req.params;
@@ -183,7 +174,6 @@ export const getWorkerHistory = async (req: Request, res: Response): Promise<voi
   }
 };
 
-// קבלת היסטוריית כיתה
 export const getClassHistory = async (req: Request, res: Response): Promise<void> => {
   try {
     const { classId } = req.params;
@@ -196,7 +186,6 @@ export const getClassHistory = async (req: Request, res: Response): Promise<void
   }
 };
 
-// יצירת חיבורים מרובים
 export const createMultipleAssignments = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { assignments } = req.body;
