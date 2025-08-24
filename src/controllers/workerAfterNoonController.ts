@@ -155,7 +155,6 @@ export const addMultipleWorkers = async (req: Request, res: Response): Promise<v
     const body = req.body;
     let workers;
     
-    // בדיקה אם הנתונים נשלחו כאובייקט עם שדה workers או כמערך ישיר
     if (body && body.workers && Array.isArray(body.workers)) {
       workers = body.workers;
     } else if (Array.isArray(body)) {
@@ -166,7 +165,6 @@ export const addMultipleWorkers = async (req: Request, res: Response): Promise<v
       return;
     }
     
-    // בדיקה שהמערך לא ריק
     if (workers.length === 0) {
       res.status(400).json({ error: 'מערך העובדים ריק' });
       return;
@@ -263,12 +261,8 @@ export const updateBatchWorkers = async (req: Request, res: Response): Promise<v
         }
         
         if (field === 'projectCodes') {
-          if (Array.isArray(newValue)) {
-            valueToSet = newValue;
-          } else {
-            failed.push({ id, error: 'קודי פרויקט חייבים להיות מערך' });
-            continue;
-          }
+          failed.push({ id, error: 'שדה projectCodes מיותר - השיוכים נוהלים במודל WorkerAssignment' });
+          continue;
         }
         
         if (field === 'roleName' && typeof newValue === 'string') {

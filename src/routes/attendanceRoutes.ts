@@ -24,7 +24,6 @@ interface AttendanceBody {
   controlDoc?: string;
 }
 
-// Submit monthly attendance
 const submitAttendance: RequestHandler = async (req, res) => {
   try {
 
@@ -57,7 +56,6 @@ const submitAttendance: RequestHandler = async (req, res) => {
   }
 };
 
-// Get monthly attendance for a worker
 const getWorkerAttendance: RequestHandler = async (req, res) => {
   try {
     const { workerId } = req.params;
@@ -94,7 +92,6 @@ const getWorkerAttendance: RequestHandler = async (req, res) => {
   }
 };
 
-// Get monthly attendance for a class
 const getClassAttendance: RequestHandler = async (req, res) => {
   try {
     const { classId } = req.params;
@@ -167,7 +164,6 @@ const getAllAttendance: RequestHandler = async (req, res) => {
     }
 }
 
-// Update attendance record when document is deleted
 const updateAttendanceAfterDocDelete: RequestHandler = async (req, res) => {
   try {
     const { attendanceId, docType } = req.body;
@@ -387,7 +383,6 @@ router.delete('/camp/delete-document', authenticateToken, async (req, res) => {
 
 router.get('/camp/coordinator/:coordinatorId', getCampAttendanceByCoordinator);
 
-// קבלת דוחות נוכחות של קייטנות לפי כיתה
 router.get('/camp/class/:classId', async (req, res) => {
   try {
     const { classId } = req.params;
@@ -399,8 +394,7 @@ router.get('/camp/class/:classId', async (req, res) => {
       .populate('workerAttendanceDoc')
       .populate('studentAttendanceDoc')
       .populate('controlDocs');
-
-    // הוספת URLs חתומים למסמכים
+      
     const attendanceWithUrls = await Promise.all(
       campAttendance.map(async (record) => {
         const recordObj = record.toObject();

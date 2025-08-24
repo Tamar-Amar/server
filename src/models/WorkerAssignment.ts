@@ -94,3 +94,4 @@ WorkerAssignmentSchema.index({ workerId: 1, classId: 1, projectCode: 1 });
 WorkerAssignmentSchema.index({ startDate: 1, endDate: 1 });
 
 export default mongoose.model<WorkerAssignmentDocument>('WorkerAssignment', WorkerAssignmentSchema, 'worker-assignments-collections');
+

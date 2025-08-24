@@ -5,13 +5,15 @@ import {
   getWorkerAssignments,
   getClassAssignments,
   getProjectAssignments,
+  getAllAssignments,
   getActiveAssignmentsOnDate,
   updateAssignment,
   endAssignment,
   deleteAssignment,
   getWorkerHistory,
   getClassHistory,
-  createMultipleAssignments
+  createMultipleAssignments,
+  checkAssignmentExists
 } from '../controllers/workerAssignmentController';
 
 const router = express.Router();
@@ -21,6 +23,10 @@ router.use(authenticateToken);
 router.post('/', createAssignment);
 
 router.post('/multiple', createMultipleAssignments);
+
+router.post('/bulk', createMultipleAssignments);
+
+router.get('/', getAllAssignments);
 
 router.get('/worker/:workerId', getWorkerAssignments);
 
@@ -40,4 +46,7 @@ router.get('/worker/:workerId/history', getWorkerHistory);
 
 router.get('/class/:classId/history', getClassHistory);
 
+router.get('/exists', checkAssignmentExists);
+
 export default router;
+

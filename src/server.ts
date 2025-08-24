@@ -35,13 +35,11 @@ app.set('trust proxy', 1);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS as string).split(',');
 
-// Security middleware - apply first
 app.use(securityHeaders);
 app.use(securityLogger);
 app.use(sanitizeInput);
 app.use(preventParameterPollution);
 
-// CORS configuration
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -55,18 +53,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting - אחרי trust proxy
 app.use('/api/', apiRateLimit);
 app.use('/api/', speedLimiter);
 
-// Database connection
 connectDB();
 
-// API Routes with additional security
 app.use('/api/classes', classRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/activities', activityRoutes);
@@ -88,8 +82,7 @@ app.post("/api/generate-pdf", (req, res) => {
   const { month } = req.body;
   generateAttendancePdf(month, res);
 });
-
-// Health check endpoint
+  
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 

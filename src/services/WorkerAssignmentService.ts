@@ -48,6 +48,14 @@ export class WorkerAssignmentService {
     }).populate('workerId').populate('classId');
   }
 
+  static async getAllAssignments(isActive: boolean = true): Promise<WorkerAssignmentDocument[]> {
+    const assignments = await WorkerAssignment.find({
+      isActive: true
+    }).populate('workerId').populate('classId');
+    
+    return assignments;
+  }
+
   static async getActiveAssignmentsOnDate(date: Date): Promise<WorkerAssignmentDocument[]> {
     return await WorkerAssignment.find({
       isActive: true,
@@ -149,3 +157,4 @@ export class WorkerAssignmentService {
     return await WorkerAssignment.insertMany(assignmentDocs);
   }
 }
+

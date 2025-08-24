@@ -80,6 +80,21 @@ export const getProjectAssignments = async (req: Request, res: Response): Promis
   }
 };
 
+export const getAllAssignments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { isActive } = req.query;
+        
+    const assignments = await WorkerAssignmentService.getAllAssignments(
+      isActive === 'true'
+    );
+
+    res.status(200).json(assignments);
+  } catch (err) {
+    console.error('Error getting all assignments:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+
 export const getActiveAssignmentsOnDate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { date } = req.query;
@@ -209,3 +224,26 @@ export const createMultipleAssignments = async (req: AuthenticatedRequest, res: 
     res.status(500).json({ error: (err as Error).message });
   }
 };
+
+export const checkAssignmentExists = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { workerId, classId, projectCode } = req.query;
+    
+    if (!workerId || !classId || !projectCode) {
+      res.status(400).json({ error: 'נדרשים workerId, classId ו-projectCode' });
+      return;
+    }
+
+    const exists = await WorkerAssignmentService.hasActiveAssignment(
+      workerId as string,
+      classId as string,
+      parseInt(projectCode as string)
+    );
+    
+    res.status(200).json({ exists });
+  } catch (err) {
+    console.error('Error checking assignment existence:', err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+};
+

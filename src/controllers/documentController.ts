@@ -509,8 +509,6 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
         }
       ]);
     }
-    
-    console.log(`📊 נמצאו ${documents.length} מסמכים בסך הכל`);
 
     if (documents.length === 0) {
       res.status(404).json({ error: 'לא נמצאו מסמכים להורדה' });
@@ -527,7 +525,7 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
     
     archive.pipe(res);
     
-    // טיפול בשגיאות של ה-stream
+
     archive.on('error', (err) => {
       console.error('❌ שגיאה ב-archive stream:', err);
       if (!res.headersSent) {
@@ -535,7 +533,7 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
       }
     });
     
-    // טיפול בשגיאות של ה-response
+
     res.on('error', (err) => {
       console.error('❌ שגיאה ב-response stream:', err);
     });
@@ -543,14 +541,13 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
     const maxDocuments = req.body.maxDocuments || 1000; 
     const documentsToProcess = documents.slice(0, maxDocuments);
     
-    console.log(`📦 יוצר ZIP batch ${batchIndex + 1} עם ${documentsToProcess.length} מסמכים`);
     
     if (documentsToProcess.length === 0) {
       res.status(404).json({ error: 'לא נמצאו מסמכים להורדה' });
       return;
     }
     
-    // הגדרת headers עם מידע על ה-batch
+
     res.setHeader('X-Total-Documents', documentsToProcess.length.toString());
     res.setHeader('X-Batch-Size', batchSize.toString());
     res.setHeader('X-Current-Batch', (batchIndex + 1).toString());
@@ -571,21 +568,45 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
       } 
     }
     
-    let processedCount = 0;
-    for (const doc of documentsToProcess) {
-      processedCount++;
-      if (processedCount % 10 === 0) {
+    
 
-      }
-      try {
-
-        let fileBuffer;
+    const CONCURRENT_DOWNLOADS = 10;
+    const downloadResults: any[] = [];
+    
+    for (let i = 0; i < documentsToProcess.length; i += CONCURRENT_DOWNLOADS) {
+      const batch = documentsToProcess.slice(i, i + CONCURRENT_DOWNLOADS);
+      const batchNumber = Math.floor(i / CONCURRENT_DOWNLOADS) + 1;
+      const totalBatches = Math.ceil(documentsToProcess.length / CONCURRENT_DOWNLOADS);
+      
+      
+      const batchPromises = batch.map(async (doc, batchIndex) => {
+        const globalIndex = i + batchIndex;
         try {
-          fileBuffer = await getFileFromS3(doc.s3Key as string);
+          const fileBuffer = await getFileFromS3(doc.s3Key as string);
+          return { doc, fileBuffer, success: true, index: globalIndex };
         } catch (error) {
-          console.error(`❌ שגיאה בהורדת קובץ מ-S3: ${doc.s3Key}`, error);
-          continue; // נמשיך עם הקובץ הבא
+          console.error(`❌ שגיאה בהורדת קובץ ${doc.fileName}:`, error);
+          return { doc, fileBuffer: null, success: false, index: globalIndex };
         }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      downloadResults.push(...batchResults);
+      
+    }
+    
+    
+    let processedCount = 0;
+    for (const result of downloadResults) {
+      if (!result.success || !result.fileBuffer) {
+        continue;
+      }
+      
+      const { doc, fileBuffer } = result;
+      processedCount++;
+      
+      
+      try {
         let workerName = 'לא ידוע';
         let workerId = 'לא ידוע';
         
@@ -656,11 +677,11 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
           archive.append(fileBuffer, { name: fullPath });
         } catch (error) {
           console.error(`❌ שגיאה בהוספת קובץ ${doc.fileName} ל-ZIP:`, error);
-          // נמשיך עם הקובץ הבא במקום לעצור הכל
+
         }
       } catch (error) {
         console.error(`❌ שגיאה בעיבוד מסמך ${doc.fileName}:`, error);
-        // נמשיך עם הקובץ הבא במקום לעצור הכל
+
       }
       }
         
@@ -668,7 +689,7 @@ export const downloadMultipleDocuments: RequestHandler = async (req: RequestWith
           await archive.finalize();
         } catch (error) {
           console.error('❌ שגיאה ב-finalize של ה-ZIP:', error);
-          // אם יש שגיאה, נשלח תגובת שגיאה
+          
           if (!res.headersSent) {
             res.status(500).json({ error: 'שגיאה ביצירת קובץ ZIP' });
           }
